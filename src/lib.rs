@@ -2,6 +2,8 @@
 #![warn(missing_debug_implementations)]
 
 use std::io::Write;
+use enum_map::Enum;
+use enum_map::EnumMap;
 
 #[derive(Clone)]
 #[derive(Copy)]
@@ -86,6 +88,26 @@ pub enum EDIDDisplayColorTypeEncoding {
     ColorEncoding(EDIDDisplayColorEncoding)
 }
 
+#[derive(Clone)]
+#[derive(Copy)]
+#[derive(Debug)]
+#[derive(Default)]
+pub struct EDIDChromaPoint {
+    x: u16,
+    y: u16,
+}
+
+#[derive(Clone)]
+#[derive(Copy)]
+#[derive(Debug)]
+#[derive(Enum)]
+pub enum EDIDChromaCoordinate {
+    White,
+    Blue,
+    Red,
+    Green,
+}
+
 #[derive(Debug)]
 pub struct EDID {
     // EDID Version
@@ -107,7 +129,7 @@ pub struct EDID {
     feature_active_off: bool,
     feature_color_type_encoding: EDIDDisplayColorTypeEncoding,
 
-    // FIXME: Add Color Charateristics
+    chroma_coord: EnumMap<EDIDChromaCoordinate, EDIDChromaPoint>,
 }
 
 impl EDID {
@@ -129,7 +151,14 @@ impl EDID {
             feature_suspend: false,
             feature_active_off: false,
             feature_color_type_encoding: EDIDDisplayColorTypeEncoding::ColorEncoding(EDIDDisplayColorEncoding::RGB444),
+
+            chroma_coord: EnumMap::<EDIDChromaCoordinate, EDIDChromaPoint>::new(),
         }
+    }
+
+    pub fn set_chroma_coordinates(&mut self, chroma: EDIDChromaCoordinate, x: u16, y: u16) {
+        self.chroma_coord[chroma].x = x;
+        self.chroma_coord[chroma].y = y;
     }
 
     pub fn serialize(self, writer: &mut impl Write) {
@@ -224,8 +253,36 @@ impl EDID {
         // FIXME: Other features support
         writer.write(&[feature]).unwrap();
 
-        // FIXME: Support Display Chromaticity Coordinates 
-        writer.write(&[0, 0, 0, 0, 0, 0, 0, 0, 0, 0]).unwrap();
+        // Chromaticity Coordinates
+        let blue_x = self.chroma_coord[EDIDChromaCoordinate::Blue].x;
+        let blue_y = self.chroma_coord[EDIDChromaCoordinate::Blue].y;
+        let red_x = self.chroma_coord[EDIDChromaCoordinate::Red].x;
+        let red_y = self.chroma_coord[EDIDChromaCoordinate::Red].y;
+        let green_x = self.chroma_coord[EDIDChromaCoordinate::Green].x;
+        let green_y = self.chroma_coord[EDIDChromaCoordinate::Green].y;
+        let white_x = self.chroma_coord[EDIDChromaCoordinate::White].x;
+        let white_y = self.chroma_coord[EDIDChromaCoordinate::White].y;
+
+        let mut byte: u8 = ((red_x & 0b11) << 6) as u8;
+        byte |= ((red_y & 0b11) << 4) as u8;
+        byte |= ((green_x & 0b11) << 2) as u8;
+        byte |= (green_y & 0b11) as u8;
+        writer.write(&[byte]).unwrap();
+
+        byte = ((blue_x & 0b11) << 6) as u8;
+        byte |= ((blue_y & 0b11) << 4) as u8;
+        byte |= ((white_x & 0b11) << 2) as u8;
+        byte |= (white_y & 0b11) as u8;
+        writer.write(&[byte]).unwrap();
+
+        writer.write(&[(red_x >> 2) as u8]).unwrap();
+        writer.write(&[(red_y >> 2) as u8]).unwrap();
+        writer.write(&[(green_x >> 2) as u8]).unwrap();
+        writer.write(&[(green_y >> 2) as u8]).unwrap();
+        writer.write(&[(blue_x >> 2) as u8]).unwrap();
+        writer.write(&[(blue_y >> 2) as u8]).unwrap();
+        writer.write(&[(white_x >> 2) as u8]).unwrap();
+        writer.write(&[(white_y >> 2) as u8]).unwrap();
 
         // FIXME: Support the Established Timings
         writer.write(&[0, 0, 0]).unwrap();
