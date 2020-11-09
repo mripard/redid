@@ -15,6 +15,15 @@ pub enum EDIDVersion {
 #[derive(Clone)]
 #[derive(Copy)]
 #[derive(Debug)]
+pub enum EDIDWeekYear {
+    YearOfManufacture(u16),
+    WeekYearOfManufacture(u8, u16),
+    ModelYear(u16),
+}
+
+#[derive(Clone)]
+#[derive(Copy)]
+#[derive(Debug)]
 pub enum EDIDVideoDigitalColorDepth {
     Undefined = 0,
     Depth6bpc,
@@ -117,8 +126,7 @@ pub struct EDID {
     manufacturer: [u8; 3],
     product: u16,
     serial: u32,
-    week: u8,
-    year: u16,
+    week_year: EDIDWeekYear,
 
     // Basic Display Parameters
     input: EDIDVideoInput,
@@ -139,8 +147,7 @@ impl EDID {
             manufacturer: ['R' as u8, 'S' as u8, 'T' as u8],
             product: 0,
             serial: 0,
-            week: 1,
-            year: 2020,
+            week_year: EDIDWeekYear::ModelYear(1990),
             input: EDIDVideoInput::Digital(EDIDVideoDigitalInterface {
                 color_depth: EDIDVideoDigitalColorDepth::Undefined,
                 interface: EDIDVideoDigitalInterfaceStandard::Undefined,
@@ -154,6 +161,10 @@ impl EDID {
 
             chroma_coord: EnumMap::<EDIDChromaCoordinate, EDIDChromaPoint>::new(),
         }
+    }
+
+    pub fn set_week_year(&mut self, date: EDIDWeekYear) {
+        self.week_year = date;
     }
 
     pub fn set_chroma_coordinates(&mut self, chroma: EDIDChromaCoordinate, x: u16, y: u16) {
@@ -183,9 +194,20 @@ impl EDID {
         writer.write(&[((serial >> 16) & 0xff) as u8]).unwrap();
         writer.write(&[((serial >> 24) & 0xff) as u8]).unwrap();
 
-        // FIXME: Allow a model year as well
-        writer.write(&[self.week]).unwrap();
-        writer.write(&[(self.year - 1990) as u8]).unwrap();
+        match self.week_year {
+            EDIDWeekYear::ModelYear(year) => {
+                writer.write(&[0xff]).unwrap();
+                writer.write(&[(year - 1990) as u8]).unwrap();
+            },
+            EDIDWeekYear::YearOfManufacture(year) => {
+                writer.write(&[0x00]).unwrap();
+                writer.write(&[(year - 1990) as u8]).unwrap();
+            },
+            EDIDWeekYear::WeekYearOfManufacture(week, year) => {
+                writer.write(&[week]).unwrap();
+                writer.write(&[(year - 1990) as u8]).unwrap();
+            }
+        }
 
         match self.version {
             EDIDVersion::V1R4 => {
