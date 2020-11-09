@@ -117,6 +117,30 @@ pub enum EDIDChromaCoordinate {
     Green,
 }
 
+#[allow(non_camel_case_types)]
+#[derive(Clone)]
+#[derive(Copy)]
+#[derive(Debug)]
+pub enum EDIDEstablishedTiming {
+    ET_1024_768_60Hz,
+    ET_1024_768_70Hz,
+    ET_1024_768_75Hz,
+    ET_1024_768_87Hz_Interlaced,
+    ET_1152_870_75Hz,
+    ET_1280_1024_75Hz,
+    ET_640_480_60Hz,
+    ET_640_480_67Hz,
+    ET_640_480_72Hz,
+    ET_640_480_75Hz,
+    ET_720_400_70Hz,
+    ET_720_400_88Hz,
+    ET_800_600_56Hz,
+    ET_800_600_60Hz,
+    ET_800_600_72Hz,
+    ET_800_600_75Hz,
+    ET_832_624_75Hz,
+}
+
 #[derive(Debug)]
 pub struct EDID {
     // EDID Version
@@ -138,6 +162,7 @@ pub struct EDID {
     feature_color_type_encoding: EDIDDisplayColorTypeEncoding,
 
     chroma_coord: EnumMap<EDIDChromaCoordinate, EDIDChromaPoint>,
+    established_timings: Vec<EDIDEstablishedTiming>,
 }
 
 impl EDID {
@@ -160,7 +185,12 @@ impl EDID {
             feature_color_type_encoding: EDIDDisplayColorTypeEncoding::ColorEncoding(EDIDDisplayColorEncoding::RGB444),
 
             chroma_coord: EnumMap::<EDIDChromaCoordinate, EDIDChromaPoint>::new(),
+            established_timings: Vec::new(),
         }
+    }
+
+    pub fn add_established_timing(&mut self, et: EDIDEstablishedTiming) {
+        self.established_timings.push(et);
     }
 
     pub fn set_screen_size_ratio(&mut self, ratio: EDIDScreenSizeRatio) {
@@ -308,8 +338,31 @@ impl EDID {
         writer.write(&[(white_x >> 2) as u8]).unwrap();
         writer.write(&[(white_y >> 2) as u8]).unwrap();
 
-        // FIXME: Support the Established Timings
-        writer.write(&[0, 0, 0]).unwrap();
+        let mut byte0: u8 = 0;
+        let mut byte1: u8 = 0;
+        let mut byte2: u8 = 0;
+        for et in self.established_timings {
+            match et {
+                EDIDEstablishedTiming::ET_800_600_60Hz => byte0 |= (1 << 0) as u8,
+                EDIDEstablishedTiming::ET_800_600_56Hz => byte0 |= (1 << 1) as u8,
+                EDIDEstablishedTiming::ET_640_480_75Hz => byte0 |= (1 << 2) as u8,
+                EDIDEstablishedTiming::ET_640_480_72Hz => byte0 |= (1 << 3) as u8,
+                EDIDEstablishedTiming::ET_640_480_67Hz => byte0 |= (1 << 4) as u8,
+                EDIDEstablishedTiming::ET_640_480_60Hz => byte0 |= (1 << 5) as u8,
+                EDIDEstablishedTiming::ET_720_400_88Hz => byte0 |= (1 << 6) as u8,
+                EDIDEstablishedTiming::ET_720_400_70Hz => byte0 |= (1 << 7) as u8,
+                EDIDEstablishedTiming::ET_1280_1024_75Hz => byte1 |= (1 << 0) as u8,
+                EDIDEstablishedTiming::ET_1024_768_75Hz => byte1 |= (1 << 1) as u8,
+                EDIDEstablishedTiming::ET_1024_768_70Hz => byte1 |= (1 << 2) as u8,
+                EDIDEstablishedTiming::ET_1024_768_60Hz => byte1 |= (1 << 3) as u8,
+                EDIDEstablishedTiming::ET_1024_768_87Hz_Interlaced => byte1 |= (1 << 4) as u8,
+                EDIDEstablishedTiming::ET_832_624_75Hz => byte1 |= (1 << 5) as u8,
+                EDIDEstablishedTiming::ET_800_600_75Hz => byte1 |= (1 << 6) as u8,
+                EDIDEstablishedTiming::ET_800_600_72Hz => byte1 |= (1 << 7) as u8,
+                EDIDEstablishedTiming::ET_1152_870_75Hz => byte2 |= (1 << 7) as u8,
+            };
+        }
+        writer.write(&[byte0, byte1, byte2]).unwrap();
 
         // FIXME: Support the Standard Timings
         writer.write(&[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]).unwrap();
