@@ -66,8 +66,8 @@ pub enum EDIDVideoInput {
 #[derive(Debug)]
 pub enum EDIDScreenSizeRatio {
     Size(u8, u8),
-    LandscapeRatio(u8, u8),
-    PortraitRatio(u8, u8),
+    LandscapeRatio(f32),
+    PortraitRatio(f32),
 }
 
 #[derive(Clone)]
@@ -152,7 +152,7 @@ impl EDID {
                 color_depth: EDIDVideoDigitalColorDepth::Undefined,
                 interface: EDIDVideoDigitalInterfaceStandard::Undefined,
             }),
-            size_ratio: EDIDScreenSizeRatio::LandscapeRatio(4, 3),
+            size_ratio: EDIDScreenSizeRatio::LandscapeRatio((4 / 3) as f32),
             gamma: 2.20,
             feature_standby: false,
             feature_suspend: false,
@@ -161,6 +161,10 @@ impl EDID {
 
             chroma_coord: EnumMap::<EDIDChromaCoordinate, EDIDChromaPoint>::new(),
         }
+    }
+
+    pub fn set_screen_size_ratio(&mut self, ratio: EDIDScreenSizeRatio) {
+        self.size_ratio = ratio;
     }
 
     pub fn set_week_year(&mut self, date: EDIDWeekYear) {
@@ -227,14 +231,12 @@ impl EDID {
         }
 
         match self.size_ratio {
-            EDIDScreenSizeRatio::LandscapeRatio(num, denum) => {
-                let ratio =  num as f32 / denum as f32;
+            EDIDScreenSizeRatio::LandscapeRatio(ratio) => {
                 let stored = (ratio * 100.0 - 99.0).round() as u8;
                 writer.write(&[stored]).unwrap();
                 writer.write(&[0]).unwrap();
             },
-            EDIDScreenSizeRatio::PortraitRatio(num, denum) => {
-                let ratio =  num as f32 / denum as f32;
+            EDIDScreenSizeRatio::PortraitRatio(ratio) => {
                 let stored = (100.0 / ratio - 99.0).round() as u8;
                 writer.write(&[0]).unwrap();
                 writer.write(&[stored]).unwrap();
