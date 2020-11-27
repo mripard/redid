@@ -239,12 +239,48 @@ impl EDID {
         self.standard_timings.push(st);
     }
 
+    pub fn set_display_color_type_encoding(&mut self, color: EDIDDisplayColorTypeEncoding) {
+        self.feature_color_type_encoding = color;
+    }
+
+    pub fn set_input(&mut self, input: EDIDVideoInput) {
+        self.input = input;
+    }
+
+    pub fn set_dpm_active_off(&mut self, active_off: bool) {
+        self.feature_active_off = active_off;
+    }
+
+    pub fn set_dpm_standby(&mut self, standby: bool) {
+        self.feature_standby = standby;
+    }
+
+    pub fn set_dpm_suspend(&mut self, suspend: bool) {
+        self.feature_suspend = suspend;
+    }
+
+    pub fn set_gamma(&mut self, gamma: f32) {
+        self.gamma = gamma;
+    }
+
     pub fn set_screen_size_ratio(&mut self, ratio: EDIDScreenSizeRatio) {
         self.size_ratio = ratio;
     }
 
+    pub fn set_serial_number(&mut self, serial: u32) {
+        self.serial = serial;
+    }
+
     pub fn set_week_year(&mut self, date: EDIDWeekYear) {
         self.week_year = date;
+    }
+
+    pub fn set_manufacturer_id(&mut self, id: &str) {
+        self.manufacturer.copy_from_slice(&id.as_bytes()[0..3]);
+    }
+
+    pub fn set_product_id(&mut self, id: u16) {
+        self.product = id;
     }
 
     pub fn set_chroma_coordinates(&mut self, chroma: EDIDChromaCoordinate, x: u16, y: u16) {
