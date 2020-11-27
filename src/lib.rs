@@ -142,6 +142,36 @@ pub enum EDIDEstablishedTiming {
     ET_832_624_75Hz,
 }
 
+#[allow(non_camel_case_types)]
+#[derive(Clone)]
+#[derive(Copy)]
+#[derive(Debug)]
+pub enum EDIDStandardTimingRatio {
+    Ratio_16_10,
+    Ratio_4_3,
+    Ratio_5_4,
+    Ratio_16_9,
+}
+
+#[derive(Clone)]
+#[derive(Copy)]
+#[derive(Debug)]
+pub struct EDIDStandardTiming {
+    x: u16,
+    ratio: EDIDStandardTimingRatio,
+    frequency: u8,
+}
+
+impl EDIDStandardTiming {
+    pub fn new(x: u16, ratio: EDIDStandardTimingRatio, frequency: u8) -> Self {
+        EDIDStandardTiming {
+            x,
+            ratio,
+            frequency,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct EDID {
     // EDID Version
@@ -164,6 +194,7 @@ pub struct EDID {
 
     chroma_coord: EnumMap<EDIDChromaCoordinate, EDIDChromaPoint>,
     established_timings: Vec<EDIDEstablishedTiming>,
+    standard_timings: Vec<EDIDStandardTiming>,
 }
 
 impl EDID {
@@ -187,11 +218,16 @@ impl EDID {
 
             chroma_coord: EnumMap::<EDIDChromaCoordinate, EDIDChromaPoint>::new(),
             established_timings: Vec::new(),
+            standard_timings: Vec::new(),
         }
     }
 
     pub fn add_established_timing(&mut self, et: EDIDEstablishedTiming) {
         self.established_timings.push(et);
+    }
+
+    pub fn add_standard_timing(&mut self, st: EDIDStandardTiming) {
+        self.standard_timings.push(st);
     }
 
     pub fn set_screen_size_ratio(&mut self, ratio: EDIDScreenSizeRatio) {
@@ -369,8 +405,28 @@ impl EDID {
         }
         writer.write(&[byte0, byte1, byte2]).unwrap();
 
-        // FIXME: Support the Standard Timings
-        writer.write(&[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]).unwrap();
+        for st_idx in 0..8 {
+            let st = self.standard_timings.get(st_idx);
+            match st {
+                Some(timing) => {
+                    let byte0 = ((timing.x / 8) - 31) as u8;
+
+                    let mut byte1 = (timing.frequency - 60) & 0x3f as u8;
+                    let ratio: u8 = match timing.ratio {
+                        EDIDStandardTimingRatio::Ratio_16_10 => 0,
+                        EDIDStandardTimingRatio::Ratio_4_3 => 1,
+                        EDIDStandardTimingRatio::Ratio_5_4 => 2,
+                        EDIDStandardTimingRatio::Ratio_16_9 => 3,
+                    };
+                    byte1 |= ratio << 6;
+
+                    writer.write(&[byte0, byte1])
+                },
+                None => {
+                    writer.write(&[1, 1])
+                },
+            }.unwrap();
+        }
 
         // FIXME: Support the Descriptors
         for _ in 0..4 {
