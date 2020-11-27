@@ -54,6 +54,15 @@ pub struct EDIDVideoDigitalInterface {
     interface: EDIDVideoDigitalInterfaceStandard,
 }
 
+impl EDIDVideoDigitalInterface {
+    pub fn new(interface: EDIDVideoDigitalInterfaceStandard, bpc: EDIDVideoDigitalColorDepth) -> Self {
+        EDIDVideoDigitalInterface {
+            interface,
+            color_depth: bpc,
+        }
+    }
+}
+
 #[derive(Clone)]
 #[derive(Copy)]
 #[derive(Debug)]
