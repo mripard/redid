@@ -599,3 +599,5 @@ if __name__ == '__main__':
     edid_json = ParseEdid(sys.argv[1])
     if edid_json:
       print(json.dumps(edid_json, sort_keys=True, indent=4))
+    else:
+      sys.exit(1)
