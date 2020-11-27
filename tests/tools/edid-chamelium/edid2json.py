@@ -283,6 +283,7 @@ def BuildBlockAnalysis(desc):
   elif desc.type == descriptor.TYPE_MANUFACTURER_SPECIFIED:
 
     mydict['Blob'] = desc.GetBlob()
+    mydict['Tag'] = desc.GetTag()
 
   elif desc.type == descriptor.TYPE_DETAILED_TIMING:
 

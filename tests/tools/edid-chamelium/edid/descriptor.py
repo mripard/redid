@@ -119,6 +119,14 @@ class Descriptor(object):
     """
     return self._type
 
+  def GetTag(self):
+    """Fetch the Descriptor tag.
+
+    Returns:
+      An integer that contains the tag
+    """
+    return self._block[3]
+
   def GetBlock(self):
     """Fetch the data block.
 
