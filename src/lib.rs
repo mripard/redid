@@ -65,6 +65,7 @@ pub enum EDIDVideoInput {
 #[derive(Copy)]
 #[derive(Debug)]
 pub enum EDIDScreenSizeRatio {
+    None,
     Size(u8, u8),
     LandscapeRatio(f32),
     PortraitRatio(f32),
@@ -177,7 +178,7 @@ impl EDID {
                 color_depth: EDIDVideoDigitalColorDepth::Undefined,
                 interface: EDIDVideoDigitalInterfaceStandard::Undefined,
             }),
-            size_ratio: EDIDScreenSizeRatio::LandscapeRatio((4 / 3) as f32),
+            size_ratio: EDIDScreenSizeRatio::None,
             gamma: 2.20,
             feature_standby: false,
             feature_suspend: false,
@@ -275,6 +276,10 @@ impl EDID {
                 writer.write(&[x]).unwrap();
                 writer.write(&[y]).unwrap();
             },
+            EDIDScreenSizeRatio::None => {
+                writer.write(&[0]).unwrap();
+                writer.write(&[0]).unwrap();
+            }
         }
 
         let gamma = (self.gamma * 100.0 - 100.0).round() as u8;
