@@ -199,7 +199,10 @@ pub struct EDID {
     feature_standby: bool,
     feature_suspend: bool,
     feature_active_off: bool,
+    feature_continuous_frequency: bool,
     feature_color_type_encoding: EDIDDisplayColorTypeEncoding,
+    feature_srgb_default: bool,
+    feature_preferred_timings_native: bool,
 
     chroma_coord: EnumMap<EDIDChromaCoordinate, EDIDChromaPoint>,
     established_timings: Vec<EDIDEstablishedTiming>,
@@ -223,7 +226,10 @@ impl EDID {
             feature_standby: false,
             feature_suspend: false,
             feature_active_off: false,
+            feature_continuous_frequency: false,
             feature_color_type_encoding: EDIDDisplayColorTypeEncoding::ColorEncoding(EDIDDisplayColorEncoding::RGB444),
+            feature_srgb_default: false,
+            feature_preferred_timings_native: false,
 
             chroma_coord: EnumMap::<EDIDChromaCoordinate, EDIDChromaPoint>::new(),
             established_timings: Vec::new(),
@@ -237,6 +243,10 @@ impl EDID {
 
     pub fn add_standard_timing(&mut self, st: EDIDStandardTiming) {
         self.standard_timings.push(st);
+    }
+
+    pub fn set_continuous_frequency(&mut self, cf: bool) {
+        self.feature_continuous_frequency = cf;
     }
 
     pub fn set_display_color_type_encoding(&mut self, color: EDIDDisplayColorTypeEncoding) {
@@ -265,6 +275,14 @@ impl EDID {
 
     pub fn set_screen_size_ratio(&mut self, ratio: EDIDScreenSizeRatio) {
         self.size_ratio = ratio;
+    }
+
+    pub fn set_preferred_timings_native(&mut self, native: bool) {
+        self.feature_preferred_timings_native = native;
+    }
+
+    pub fn set_srgb_default(&mut self, default: bool) {
+        self.feature_srgb_default = default;
     }
 
     pub fn set_serial_number(&mut self, serial: u32) {
@@ -377,6 +395,18 @@ impl EDID {
 
         if self.feature_active_off {
             feature |= 1 << 5;
+        }
+
+        if self.feature_srgb_default {
+            feature |= 1 << 2;
+        }
+
+        if self.feature_preferred_timings_native {
+            feature |= 1 << 1;
+        }
+
+        if self.feature_continuous_frequency {
+            feature |= 1;
         }
 
         // FIXME: Support Color Type for Analog
