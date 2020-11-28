@@ -538,7 +538,9 @@ impl EDID {
         self
     }
 
-    pub fn serialize(self, writer: &mut impl Write) {
+    pub fn serialize(self) -> Vec<u8> {
+        let mut writer = Vec::with_capacity(0x80);
+
         writer.write(&[0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00]).unwrap();
 
         let manufacturer = &self.manufacturer;
@@ -976,5 +978,7 @@ impl EDID {
 
         // FIXME: Support the cheksum
         writer.write(&[0]).unwrap();
+
+        writer
     }
 }

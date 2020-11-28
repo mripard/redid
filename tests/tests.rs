@@ -681,8 +681,6 @@ fn test_edid(edid: &str) {
     let mut input_data: [u8; 0x80] = [0; 0x80];
     input_file.read_exact(&mut input_data).unwrap();
 
-    let mut output_data: Vec<u8> = Vec::with_capacity(0x80);
-
     let output_str = std::str::from_utf8(&output.stdout)
         .expect("Couldn't convert the output to UTF-8");
 
@@ -690,11 +688,9 @@ fn test_edid(edid: &str) {
 
     assert!(json["Version"] == "1.4");
 
-    let mut edid = EDID::new(EDIDVersion::V1R4);
-
-    let base = &json["Base"];
-    edid = decode_base_edid(edid, base);
-    edid.serialize(&mut output_data);
+    let edid = EDID::new(EDIDVersion::V1R4);
+    let output_data = decode_base_edid(edid, &json["Base"])
+        .serialize();
 
     assert!(edid_equals(&input_data[0..0x7e], &output_data.as_slice()[0..0x7e]));
 }
