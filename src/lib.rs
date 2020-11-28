@@ -447,77 +447,95 @@ impl EDID {
         }
     }
 
-    pub fn add_established_timing(&mut self, et: EDIDEstablishedTiming) {
+    pub fn add_established_timing(mut self, et: EDIDEstablishedTiming) -> Self {
         self.established_timings.push(et);
+        self
     }
 
-    pub fn add_standard_timing(&mut self, st: EDIDStandardTiming) {
+    pub fn add_standard_timing(mut self, st: EDIDStandardTiming) -> Self {
         self.standard_timings.push(st);
+        self
     }
 
-    pub fn add_descriptor(&mut self, desc: EDIDDescriptor) {
+    pub fn add_descriptor(mut self, desc: EDIDDescriptor) -> Self {
         self.descriptors.push(desc);
+        self
     }
 
-    pub fn set_continuous_frequency(&mut self, cf: bool) {
+    pub fn set_continuous_frequency(mut self, cf: bool) -> Self {
         self.feature_continuous_frequency = cf;
+        self
     }
 
-    pub fn set_display_color_type_encoding(&mut self, color: EDIDDisplayColorTypeEncoding) {
+    pub fn set_display_color_type_encoding(mut self, color: EDIDDisplayColorTypeEncoding) -> Self {
         self.feature_color_type_encoding = color;
+        self
     }
 
-    pub fn set_input(&mut self, input: EDIDVideoInput) {
+    pub fn set_input(mut self, input: EDIDVideoInput) -> Self {
         self.input = input;
+        self
     }
 
-    pub fn set_dpm_active_off(&mut self, active_off: bool) {
+    pub fn set_dpm_active_off(mut self, active_off: bool) -> Self {
         self.feature_active_off = active_off;
+        self
     }
 
-    pub fn set_dpm_standby(&mut self, standby: bool) {
+    pub fn set_dpm_standby(mut self, standby: bool) -> Self {
         self.feature_standby = standby;
+        self
     }
 
-    pub fn set_dpm_suspend(&mut self, suspend: bool) {
+    pub fn set_dpm_suspend(mut self, suspend: bool) -> Self {
         self.feature_suspend = suspend;
+        self
     }
 
-    pub fn set_gamma(&mut self, gamma: f32) {
+    pub fn set_gamma(mut self, gamma: f32) -> Self {
         self.gamma = gamma;
+        self
     }
 
-    pub fn set_screen_size_ratio(&mut self, ratio: EDIDScreenSizeRatio) {
+    pub fn set_screen_size_ratio(mut self, ratio: EDIDScreenSizeRatio) -> Self {
         self.size_ratio = ratio;
+        self
     }
 
-    pub fn set_preferred_timings_native(&mut self, native: bool) {
+    pub fn set_preferred_timings_native(mut self, native: bool) -> Self {
         self.feature_preferred_timings_native = native;
+        self
     }
 
-    pub fn set_srgb_default(&mut self, default: bool) {
+    pub fn set_srgb_default(mut self, default: bool) -> Self {
         self.feature_srgb_default = default;
+        self
     }
 
-    pub fn set_serial_number(&mut self, serial: u32) {
+    pub fn set_serial_number(mut self, serial: u32) -> Self {
         self.serial = serial;
+        self
     }
 
-    pub fn set_week_year(&mut self, date: EDIDWeekYear) {
+    pub fn set_week_year(mut self, date: EDIDWeekYear) -> Self {
         self.week_year = date;
+        self
     }
 
-    pub fn set_manufacturer_id(&mut self, id: &str) {
+    pub fn set_manufacturer_id(mut self, id: &str) -> Self {
         self.manufacturer.copy_from_slice(&id.as_bytes()[0..3]);
+        self
     }
 
-    pub fn set_product_id(&mut self, id: u16) {
+    pub fn set_product_id(mut self, id: u16) -> Self {
         self.product = id;
+        self
     }
 
-    pub fn set_chroma_coordinates(&mut self, chroma: EDIDChromaCoordinate, x: u16, y: u16) {
+    pub fn set_chroma_coordinates(mut self, chroma: EDIDChromaCoordinate, x: u16, y: u16) -> Self {
         self.chroma_coord[chroma].x = x;
         self.chroma_coord[chroma].y = y;
+        self
     }
 
     pub fn serialize(self, writer: &mut impl Write) {

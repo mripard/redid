@@ -31,128 +31,136 @@ use edid::EDID;
 use serde_json::Value;
 use test_generator::test_resources;
 
-fn decode_manufacturer_info(edid: &mut EDID, manufacturer_info: &Value) {
+fn decode_manufacturer_info(mut edid: EDID, manufacturer_info: &Value) -> EDID {
     let manufacturer_id_val = manufacturer_info["Manufacturer ID"]
         .as_str()
         .expect("Couldn't decode the manufacturer ID");
-    edid.set_manufacturer_id(manufacturer_id_val);
+    edid = edid.set_manufacturer_id(manufacturer_id_val);
 
     let product_id_val = manufacturer_info["ID Product Code"]
         .as_u64()
         .expect("Couldn't decode the product ID") as u16;
-    edid.set_product_id(product_id_val);
+    edid = edid.set_product_id(product_id_val);
 
-    manufacturer_info["Serial number"]
-        .as_u64()
-        .map(|serial| edid.set_serial_number(serial as u32));
+    edid = match manufacturer_info["Serial number"].as_u64() {
+            Some(serial) => edid.set_serial_number(serial as u32),
+            _ => edid,
+        };
 
-    manufacturer_info["Model year"]
-        .as_u64()
-        .map(|year| edid.set_week_year(EDIDWeekYear::ModelYear(year as u16)));
+    edid = match manufacturer_info["Model year"].as_u64() {
+        Some(year) => edid.set_week_year(EDIDWeekYear::ModelYear(year as u16)),
+        _ => edid,
+    };
 
     let year_val = manufacturer_info["Year of manufacture"]
         .as_u64();
 
-    match manufacturer_info["Week of manufacture"].as_u64() {
+    edid = match manufacturer_info["Week of manufacture"].as_u64() {
         Some(week) => {
             let year = year_val.expect("Couldn't decode the Year of Manufacture") as u16;
-            edid.set_week_year(EDIDWeekYear::WeekYearOfManufacture(week as u8, year));
+            edid.set_week_year(EDIDWeekYear::WeekYearOfManufacture(week as u8, year))
         },
         None => {
-            year_val.map(|year| edid.set_week_year(EDIDWeekYear::YearOfManufacture(year as u16)));
+            match year_val {
+                Some(year) => edid.set_week_year(EDIDWeekYear::YearOfManufacture(year as u16)),
+                None => edid,
+            }
         },
-    }
+    };
+
+    edid
 }
 
-fn decode_basic_display_parameters(edid: &mut EDID, basic_display: &Value) {
+fn decode_digital_input(mut edid: EDID, basic_display: &Value) -> EDID {
+    let color_type_str = basic_display["Display color type"]
+        .as_str()
+        .expect("Couldn't decode the color type");
+    let color_type = match color_type_str {
+        "RGB 4:4:4" => EDIDDisplayColorEncoding::RGB444,
+        "RGB 4:4:4 + YCrCb 4:2:2" => EDIDDisplayColorEncoding::RGB444YCbCr422,
+        "RGB 4:4:4 + YCrCb 4:4:4" => EDIDDisplayColorEncoding::RGB444YCbCr444,
+        "RGB 4:4:4 + YCrCb 4:4:4 + YCrCb 4:2:2" => EDIDDisplayColorEncoding::RGB444YCbCr444YCbCr422,
+        _ => panic!("Unknown Color Encoding"),
+    };
+    edid = edid.set_display_color_type_encoding(EDIDDisplayColorTypeEncoding::ColorEncoding(color_type));
+
+    let bpc_str = basic_display["Color Bit Depth"]
+        .as_str();
+    let bpc = match bpc_str {
+        Some(bpc_str_inner) => {
+            match bpc_str_inner {
+                "6 Bits per Primary Color" => EDIDVideoDigitalColorDepth::Depth6bpc,
+                "8 Bits per Primary Color" => EDIDVideoDigitalColorDepth::Depth8bpc,
+                "10 Bits per Primary Color" => EDIDVideoDigitalColorDepth::Depth10bpc,
+                _ => panic!("Unknown bits per color"),
+            }
+        },
+        None => EDIDVideoDigitalColorDepth::Undefined,
+    };
+
+    let interface_str = basic_display["Digital Video Interface Standard Support"]
+        .as_str();
+    let interface = match interface_str {
+        Some(interface_str_inner) => {
+            match interface_str_inner {
+                "DisplayPort" => EDIDVideoDigitalInterfaceStandard::DisplayPort,
+                "HDMI-a" => EDIDVideoDigitalInterfaceStandard::HDMIa,
+                _ => panic!("Unknown interface standard"),
+            }
+        },
+        None => EDIDVideoDigitalInterfaceStandard::Undefined,
+    };
+
+    edid.set_input(EDIDVideoInput::Digital(EDIDVideoDigitalInterface::new(interface, bpc)))
+}
+
+fn decode_basic_display_parameters(mut edid: EDID, basic_display: &Value) -> EDID {
     let input_str = basic_display["Video input type"]
         .as_str()
         .expect("Couldn't decode video input type");
-    let input = match input_str {
-        "Digital" => {
-            let color_type_str = basic_display["Display color type"]
-                .as_str()
-                .expect("Couldn't decode the color type");
-            let color_type = match color_type_str {
-                "RGB 4:4:4" => EDIDDisplayColorEncoding::RGB444,
-                "RGB 4:4:4 + YCrCb 4:2:2" => EDIDDisplayColorEncoding::RGB444YCbCr422,
-                "RGB 4:4:4 + YCrCb 4:4:4" => EDIDDisplayColorEncoding::RGB444YCbCr444,
-                "RGB 4:4:4 + YCrCb 4:4:4 + YCrCb 4:2:2" => EDIDDisplayColorEncoding::RGB444YCbCr444YCbCr422,
-                _ => panic!("Unknown Color Encoding"),
-            };
-            edid.set_display_color_type_encoding(EDIDDisplayColorTypeEncoding::ColorEncoding(color_type));
-            
-            let bpc_str = basic_display["Color Bit Depth"]
-                .as_str();
-            let bpc = match bpc_str {
-                Some(bpc_str_inner) => {
-                    match bpc_str_inner {
-                        "6 Bits per Primary Color" => EDIDVideoDigitalColorDepth::Depth6bpc,
-                        "8 Bits per Primary Color" => EDIDVideoDigitalColorDepth::Depth8bpc,
-                        "10 Bits per Primary Color" => EDIDVideoDigitalColorDepth::Depth10bpc,
-                        _ => panic!("Unknown bits per color"),
-                    }
-                },
-                None => EDIDVideoDigitalColorDepth::Undefined,
-            };
 
-            let interface_str = basic_display["Digital Video Interface Standard Support"]
-                .as_str();
-            let interface = match interface_str {
-                Some(interface_str_inner) => {
-                    match interface_str_inner {
-                        "DisplayPort" => EDIDVideoDigitalInterfaceStandard::DisplayPort,
-                        "HDMI-a" => EDIDVideoDigitalInterfaceStandard::HDMIa,
-                        _ => panic!("Unknown interface standard"),
-                    }
-                },
-                None => EDIDVideoDigitalInterfaceStandard::Undefined,
-            };
-
-            EDIDVideoInput::Digital(EDIDVideoDigitalInterface::new(interface, bpc))
-        }
+    edid = match input_str {
+        "Digital" => decode_digital_input(edid, basic_display),
         _ => panic!("Unknown interface type"),
     };
-    edid.set_input(input);
 
     let cf_str = basic_display["Continuous frequency supported"]
         .as_bool()
         .expect("Couldn't decode continous frequency");
-    edid.set_continuous_frequency(cf_str);
+    edid = edid.set_continuous_frequency(cf_str);
 
     let dpm_active_off_str = basic_display["DPM active-off supported"]
         .as_bool()
         .expect("Couldn't decode DPM active-off");
-    edid.set_dpm_active_off(dpm_active_off_str);
+    edid = edid.set_dpm_active_off(dpm_active_off_str);
 
     let dpm_standby_str = basic_display["DPM standby supported"]
         .as_bool()
         .expect("Couldn't decode DPM standby");
-    edid.set_dpm_standby(dpm_standby_str);
+    edid = edid.set_dpm_standby(dpm_standby_str);
 
     let dpm_suspend_str = basic_display["DPM suspend supported"]
         .as_bool()
         .expect("Couldn't decode DPM suspend");
-    edid.set_dpm_suspend(dpm_suspend_str);
+    edid = edid.set_dpm_suspend(dpm_suspend_str);
 
     let srgb_default_str = basic_display["sRGB Standard is default colour space"]
         .as_bool()
         .expect("Couldn't decode sRGB Standard Default");
-    edid.set_srgb_default(srgb_default_str);
+    edid = edid.set_srgb_default(srgb_default_str);
  
     let preferred_native_str = basic_display["Preferred timing includes native timing pixel format and refresh rate"]
         .as_bool()
         .expect("Couldn't decode Preferred timings");
-    edid.set_preferred_timings_native(preferred_native_str);
+    edid = edid.set_preferred_timings_native(preferred_native_str);
 
     let gamma_str = basic_display["Display gamma"]
         .as_f64()
         .expect("Couldn't decode gamma") as f32;
-    edid.set_gamma(gamma_str);
+    edid = edid.set_gamma(gamma_str);
 
-    basic_display["Aspect ratio (portrait)"]
-        .as_str()
-        .map(|val_str| {
+    edid = match basic_display["Aspect ratio (portrait)"].as_str() {
+        Some(val_str) => {
             let mut split = val_str.split(":"); 
 
             let num = split.next()
@@ -166,11 +174,12 @@ fn decode_basic_display_parameters(edid: &mut EDID, basic_display: &Value) {
                 .expect("Couldn't parse the ratio denominator");
 
             edid.set_screen_size_ratio(EDIDScreenSizeRatio::PortraitRatio(num / denum))
-        });
+        },
+        _ => edid,
+    };
 
-    basic_display["Aspect ratio (landscape)"]
-        .as_str()
-        .map(|val_str| {
+    edid = match basic_display["Aspect ratio (landscape)"].as_str() {
+        Some(val_str) => {
             let mut split = val_str.split(":");
 
             let num = split.next()
@@ -185,77 +194,88 @@ fn decode_basic_display_parameters(edid: &mut EDID, basic_display: &Value) {
                 .parse::<f32>()
                 .expect("Couldn't parse the ratio denominator");
 
-            edid.set_screen_size_ratio(EDIDScreenSizeRatio::LandscapeRatio(num / denum));
-        });
+            edid.set_screen_size_ratio(EDIDScreenSizeRatio::LandscapeRatio(num / denum))
+        },
+        _ => edid,
+    };
 
-    basic_display["Maximum dimensions (cm)"]
-        .as_object()
-        .map(|size| {
+    edid = match basic_display["Maximum dimensions (cm)"].as_object() {
+        Some(size) => {
             let x_val = size["x"]
                 .as_u64()
                 .expect("Couldn't decode X screen size") as u8;
             let y_val = size["y"]
                 .as_u64()
                 .expect("Couldn't decode Y screen size") as u8;
-            edid.set_screen_size_ratio(EDIDScreenSizeRatio::Size(x_val, y_val));
-        });
+            edid.set_screen_size_ratio(EDIDScreenSizeRatio::Size(x_val, y_val))
+        },
+        _ => edid,
+    };
+
+    edid
 }
 
-fn decode_chromaticity(edid: &mut EDID, chromaticity: &Value) {
-    chromaticity["Blue"]
-        .as_object()
-        .map(|chroma| {
+fn decode_chromaticity(mut edid: EDID, chromaticity: &Value) -> EDID {
+    edid = match chromaticity["Blue"].as_object() {
+        Some(chroma) => {
             let x_val = chroma["x"]
-            .as_u64()
-            .expect("Couldn't decode X chroma value") as u16;
-        let y_val = chroma["y"]
-            .as_u64()
-            .expect("Couldn't decode Y chroma value") as u16;
+                .as_u64()
+                .expect("Couldn't decode X chroma value") as u16;
+            let y_val = chroma["y"]
+                .as_u64()
+                .expect("Couldn't decode Y chroma value") as u16;
 
-            edid.set_chroma_coordinates(EDIDChromaCoordinate::Blue, x_val, y_val);
-        });
+            edid.set_chroma_coordinates(EDIDChromaCoordinate::Blue, x_val, y_val)
+        },
+        _ => edid,
+    };
 
-    chromaticity["Red"]
-        .as_object()
-        .map(|chroma| {
+    edid = match chromaticity["Red"].as_object() {
+        Some(chroma) =>  {
             let x_val = chroma["x"]
-            .as_u64()
-            .expect("Couldn't decode X chroma value") as u16;
-        let y_val = chroma["y"]
-            .as_u64()
-            .expect("Couldn't decode Y chroma value") as u16;
+                .as_u64()
+                .expect("Couldn't decode X chroma value") as u16;
+            let y_val = chroma["y"]
+                .as_u64()
+                .expect("Couldn't decode Y chroma value") as u16;
 
-            edid.set_chroma_coordinates(EDIDChromaCoordinate::Red, x_val, y_val);
-        });
+            edid.set_chroma_coordinates(EDIDChromaCoordinate::Red, x_val, y_val)
+        },
+        _ => edid,
+    };
 
-    chromaticity["Green"]
-        .as_object()
-        .map(|chroma| {
+    edid = match chromaticity["Green"].as_object() {
+        Some(chroma) => {
             let x_val = chroma["x"]
-            .as_u64()
-            .expect("Couldn't decode X chroma value") as u16;
-        let y_val = chroma["y"]
-            .as_u64()
-            .expect("Couldn't decode Y chroma value") as u16;
+                .as_u64()
+                .expect("Couldn't decode X chroma value") as u16;
+            let y_val = chroma["y"]
+                .as_u64()
+                .expect("Couldn't decode Y chroma value") as u16;
 
-            edid.set_chroma_coordinates(EDIDChromaCoordinate::Green, x_val, y_val);
-        });
+            edid.set_chroma_coordinates(EDIDChromaCoordinate::Green, x_val, y_val)
+        },
+        _ => edid,
+    };
 
-    chromaticity["White"]
-        .as_object()
-        .map(|chroma| {
+    edid = match chromaticity["White"].as_object() {
+        Some(chroma) => {
             let x_val = chroma["x"]
-            .as_u64()
-            .expect("Couldn't decode X chroma value") as u16;
-        let y_val = chroma["y"]
-            .as_u64()
-            .expect("Couldn't decode Y chroma value") as u16;
+                .as_u64()
+                .expect("Couldn't decode X chroma value") as u16;
+            let y_val = chroma["y"]
+                .as_u64()
+                .expect("Couldn't decode Y chroma value") as u16;
 
-            edid.set_chroma_coordinates(EDIDChromaCoordinate::White, x_val, y_val);
-        });
+            edid.set_chroma_coordinates(EDIDChromaCoordinate::White, x_val, y_val)
+        },
+        _ => edid,
+    };
+
+    edid
 }
 
-fn decode_established_timings(edid: &mut EDID, timings: &Value) {
+fn decode_established_timings(mut edid: EDID, timings: &Value) -> EDID {
     let map = timings.as_object()
         .expect("Couldn't decode the established timings section");
 
@@ -291,14 +311,22 @@ fn decode_established_timings(edid: &mut EDID, timings: &Value) {
             _ => panic!("Couldn't decode the established timing key"),
         };
 
-        timing_val.as_bool()
-            .map(|val| if val {
-                edid.add_established_timing(et);
-            });
+        edid = match timing_val.as_bool() {
+            Some(val) => {
+                if val {
+                    edid.add_established_timing(et)
+                } else {
+                    edid
+                }
+            },
+            _ => edid,
+        };
     }
+
+    edid
 }
 
-fn decode_standard_timings(edid: &mut EDID, timings: &Value) {
+fn decode_standard_timings(mut edid: EDID, timings: &Value) -> EDID {
     let list = timings.as_array()
         .expect("Couldn't decode Standard timings list");
 
@@ -326,11 +354,13 @@ fn decode_standard_timings(edid: &mut EDID, timings: &Value) {
             .as_u64()
             .expect("Couldn't decode Standard Timing Resolution") as u16;
 
-        edid.add_standard_timing(EDIDStandardTiming::new(x, ratio, frequency));
+        edid = edid.add_standard_timing(EDIDStandardTiming::new(x, ratio, frequency));
     }
+
+    edid
 }
 
-fn decode_descriptor_dtd(edid: &mut EDID, desc: &Value) {
+fn decode_descriptor_dtd(edid: EDID, desc: &Value) -> EDID {
     let addressable = desc["Addressable"]
         .as_object()
         .expect("Couldn't decode Descriptor Addressable section");
@@ -465,10 +495,10 @@ fn decode_descriptor_dtd(edid: &mut EDID, desc: &Value) {
             .set_sync_type(sync_type_type)
             .set_pixel_clock(pixel_clock)
             .set_stereo(stereo)
-            .set_size(hsize, vsize)));
+            .set_size(hsize, vsize)))
 }
 
-fn decode_display_range(edid: &mut EDID, desc: &Value) {
+fn decode_display_range(edid: EDID, desc: &Value) -> EDID {
     let hrate = desc["Horizontal rate (kHz)"]
         .as_object()
         .expect("Couldn't decode Display Range Horizontal section");
@@ -513,35 +543,35 @@ fn decode_display_range(edid: &mut EDID, desc: &Value) {
             .set_vertical_rate_range(vrate_min, vrate_max)
             .set_pixel_clock_max(pixel_clock)
             .set_subtype(subtype)
-    ));
+    ))
 }
 
-fn decode_data_string(edid: &mut EDID, desc: &Value) {
+fn decode_data_string(edid: EDID, desc: &Value) -> EDID {
     let string = desc["Data string"].as_str()
         .expect("Couldn't decode Product Name")
         .to_string();
 
-    edid.add_descriptor(EDIDDescriptor::DataString(string));
+    edid.add_descriptor(EDIDDescriptor::DataString(string))
 }
 
-fn decode_descriptor_name(edid: &mut EDID, desc: &Value) {
+fn decode_descriptor_name(edid: EDID, desc: &Value) -> EDID {
     let name = desc["Data string"].as_str()
         .expect("Couldn't decode Product Name")
         .to_string();
 
-    edid.add_descriptor(EDIDDescriptor::ProductName(name));
+    edid.add_descriptor(EDIDDescriptor::ProductName(name))
 }
 
-fn decode_descriptor_serial(edid: &mut EDID, desc: &Value) {
+fn decode_descriptor_serial(edid: EDID, desc: &Value) -> EDID {
     let serial = desc["Data string"].as_str()
         .expect("Couldn't decode Product Name")
         .to_string();
 
-    edid.add_descriptor(EDIDDescriptor::ProductSerialNumber(serial));
+    edid.add_descriptor(EDIDDescriptor::ProductSerialNumber(serial))
 
 }
 
-fn decode_custom_descriptor(edid: &mut EDID, desc: &Value) {
+fn decode_custom_descriptor(edid: EDID, desc: &Value) -> EDID {
     let tag = desc["Tag"]
         .as_u64()
         .expect("Couldn't decode the custom descriptor's tag") as u8;
@@ -553,10 +583,10 @@ fn decode_custom_descriptor(edid: &mut EDID, desc: &Value) {
         .map(|val| val.as_u64().expect("Couldn't decode blob") as u8)
         .collect();
     
-    edid.add_descriptor(EDIDDescriptor::Custom(tag, data));
+    edid.add_descriptor(EDIDDescriptor::Custom(tag, data))
 }
 
-fn decode_descriptors(edid: &mut EDID, descriptors: &Value) {
+fn decode_descriptors(mut edid: EDID, descriptors: &Value) -> EDID {
     let list = descriptors.as_array()
         .expect("Couldn't decode Descriptors list");
 
@@ -564,7 +594,7 @@ fn decode_descriptors(edid: &mut EDID, descriptors: &Value) {
         let desc_type = desc["Type"].as_str()
             .expect("Couldn't decode descriptor's type");
 
-        match desc_type {
+        edid = match desc_type {
             "Alphanumeric Data String (ASCII)" => decode_data_string(edid, desc),
             "Detailed Timing Descriptor" => decode_descriptor_dtd(edid, desc),
             "Display Range Limits Descriptor" => decode_display_range(edid, desc),
@@ -575,26 +605,30 @@ fn decode_descriptors(edid: &mut EDID, descriptors: &Value) {
             _ => panic!("Couldn't decode the descriptor's type"),
         };
     }
+
+    edid
 }
 
-fn decode_base_edid(edid: &mut EDID, json: &Value) {
+fn decode_base_edid(mut edid: EDID, json: &Value) -> EDID {
     let manufacturer_info = &json["Manufacturer Info"];
-    decode_manufacturer_info(edid, manufacturer_info);
+    edid = decode_manufacturer_info(edid, manufacturer_info);
 
     let basic_display = &json["Basic Display"];
-    decode_basic_display_parameters(edid, basic_display);
+    edid = decode_basic_display_parameters(edid, basic_display);
 
     let chromaticity = &json["Chromaticity"];
-    decode_chromaticity(edid, chromaticity);
+    edid = decode_chromaticity(edid, chromaticity);
 
     let established_timings = &json["Established Timing"];
-    decode_established_timings(edid, established_timings);
+    edid = decode_established_timings(edid, established_timings);
 
     let standard_timings = &json["Standard Timing"];
-    decode_standard_timings(edid, standard_timings);
+    edid = decode_standard_timings(edid, standard_timings);
 
     let descriptors = &json["Descriptors"];
-    decode_descriptors(edid, descriptors);
+    edid = decode_descriptors(edid, descriptors);
+
+    edid
 }
 
 fn edid_equals(val1: &[u8], val2: &[u8]) -> bool {
@@ -659,8 +693,7 @@ fn test_edid(edid: &str) {
     let mut edid = EDID::new(EDIDVersion::V1R4);
 
     let base = &json["Base"];
-    decode_base_edid(&mut edid, base);
-
+    edid = decode_base_edid(edid, base);
     edid.serialize(&mut output_data);
 
     assert!(edid_equals(&input_data[0..0x7e], &output_data.as_slice()[0..0x7e]));
