@@ -149,9 +149,112 @@ impl EDIDDetailedTiming {
 #[derive(Clone)]
 #[derive(Copy)]
 #[derive(Debug)]
+pub enum EDIDDisplayRangeLimitsCVTVersion {
+    V1R1,
+}
+
+#[allow(non_camel_case_types)]
+#[derive(Clone)]
+#[derive(Copy)]
+#[derive(Debug)]
+pub enum EDIDDisplayRangeLimitsCVTRatio {
+    Ratio_15_9,
+    Ratio_16_9,
+    Ratio_16_10,
+    Ratio_4_3,
+    Ratio_5_4,
+}
+
+#[derive(Clone)]
+#[derive(Debug)]
+pub struct EDIDDisplayRangeLimitsCVT {
+    version: EDIDDisplayRangeLimitsCVTVersion,
+    maximum_active_pixels: u16,
+    supported_ratios: Vec<EDIDDisplayRangeLimitsCVTRatio>,
+    preferred_ratio: EDIDDisplayRangeLimitsCVTRatio,
+    preferred_refresh: u8,
+    reduced_blanking: bool,
+    standard_blanking: bool,
+    hshrink: bool,
+    hstretch: bool,
+    vshrink: bool,
+    vstretch: bool,
+}
+
+impl EDIDDisplayRangeLimitsCVT {
+    pub fn new(version: EDIDDisplayRangeLimitsCVTVersion) -> Self {
+        Self {
+            version,
+            maximum_active_pixels: 0,
+            supported_ratios: Vec::new(),
+            preferred_ratio: EDIDDisplayRangeLimitsCVTRatio::Ratio_4_3,
+            preferred_refresh: 1,
+            reduced_blanking: false,
+            standard_blanking: false,
+            hshrink: false,
+            hstretch: false,
+            vshrink: false,
+            vstretch: false,
+        }
+    }
+
+    pub fn add_supported_ratio(mut self, ratio: EDIDDisplayRangeLimitsCVTRatio) -> Self {
+        self.supported_ratios.push(ratio);
+        self
+    }
+
+    pub fn set_maximum_active_pixels_per_line(mut self, max_active: u16) -> Self {
+        self.maximum_active_pixels = max_active;
+        self
+    }
+
+    pub fn set_preferred_ratio(mut self, ratio: EDIDDisplayRangeLimitsCVTRatio) -> Self {
+        self.preferred_ratio = ratio;
+        self
+    }
+
+    pub fn set_preferred_refresh_rate(mut self, rate: u8) -> Self {
+        self.preferred_refresh = rate;
+        self
+    }
+
+    pub fn set_reduced_cvt_blanking(mut self, enable: bool) -> Self {
+        self.reduced_blanking = enable;
+        self
+    }
+
+    pub fn set_standard_cvt_blanking(mut self, enable: bool) -> Self {
+        self.standard_blanking = enable;
+        self
+    }
+
+    pub fn set_horizontal_shrink(mut self, enable: bool) -> Self {
+        self.hshrink = enable;
+        self
+    }
+
+    pub fn set_horizontal_stretch(mut self, enable: bool) -> Self {
+        self.hstretch = enable;
+        self
+    }
+
+    pub fn set_vertical_shrink(mut self, enable: bool) -> Self {
+        self.vshrink = enable;
+        self
+    }
+
+    pub fn set_vertical_stretch(mut self, enable: bool) -> Self {
+        self.vstretch = enable;
+        self
+    }
+}
+
+#[derive(Clone)]
+#[derive(Debug)]
 pub enum EDIDDisplayRangeLimitsSubtype {
     DefaultGTF,
     RangeLimitsOnly,
+    CVTSupported(EDIDDisplayRangeLimitsCVT),
 }
 
 impl Default for EDIDDisplayRangeLimitsSubtype {
@@ -161,7 +264,6 @@ impl Default for EDIDDisplayRangeLimitsSubtype {
 }
 
 #[derive(Clone)]
-#[derive(Copy)]
 #[derive(Debug)]
 #[derive(Default)]
 pub struct EDIDDisplayRangeLimits {
@@ -377,6 +479,69 @@ impl EDIDDescriptor {
                         data.push(1);
                         data.push(0x0a);
                         data.extend_from_slice(&[0x20, 0x20, 0x20, 0x20, 0x20, 0x20]);
+                    },
+                    EDIDDisplayRangeLimitsSubtype::CVTSupported(cvt) => {
+                        data.push(4);
+
+                        match cvt.version {
+                            EDIDDisplayRangeLimitsCVTVersion::V1R1 => data.push(0x11),
+                        };
+
+                        let rounded_pclk_khz = rounded_pclk_mhz as u32 * 1000;
+                        let diff_pclk = rounded_pclk_khz - pclk;
+                        let add_prec = ((diff_pclk / 250) & 0x3f) as u8;
+                        let act_pix = cvt.maximum_active_pixels / 8;
+                        data.push((add_prec << 2) | (((act_pix >> 8) & 0x3) as u8));
+                        data.push((act_pix & 0xff) as u8);
+
+                        let mut byte: u8 = 0;
+                        for ratio in &cvt.supported_ratios {
+                            byte = byte | match ratio {
+                                EDIDDisplayRangeLimitsCVTRatio::Ratio_4_3 => 1 << 7,
+                                EDIDDisplayRangeLimitsCVTRatio::Ratio_16_9 => 1 << 6,
+                                EDIDDisplayRangeLimitsCVTRatio::Ratio_16_10 => 1 << 5,
+                                EDIDDisplayRangeLimitsCVTRatio::Ratio_5_4 => 1 << 4,
+                                EDIDDisplayRangeLimitsCVTRatio::Ratio_15_9 => 1 << 3,
+                            };
+                        }
+                        data.push(byte);
+
+                        let mut byte = 0;
+                        byte = byte | (match cvt.preferred_ratio {
+                            EDIDDisplayRangeLimitsCVTRatio::Ratio_4_3 => 0,
+                            EDIDDisplayRangeLimitsCVTRatio::Ratio_16_9 => 1,
+                            EDIDDisplayRangeLimitsCVTRatio::Ratio_16_10 => 2,
+                            EDIDDisplayRangeLimitsCVTRatio::Ratio_5_4 => 3,
+                            EDIDDisplayRangeLimitsCVTRatio::Ratio_15_9 => 4,
+                        } << 5) ;
+
+                        if cvt.reduced_blanking {
+                            byte = byte | (1 << 4);
+                        }
+
+                        if cvt.standard_blanking {
+                            byte = byte | (1 << 3);
+                        }
+                        data.push(byte);
+
+                        let mut byte = 0;
+                        if cvt.hshrink {
+                            byte |= 1 << 7;
+                        }
+
+                        if cvt.hstretch {
+                            byte |= 1 << 6;
+                        }
+
+                        if cvt.vshrink {
+                            byte |= 1 << 5;
+                        }
+
+                        if cvt.vstretch {
+                            byte |= 1 << 4;
+                        }
+                        data.push(byte);
+                        data.push(cvt.preferred_refresh);
                     },
                 };
             },

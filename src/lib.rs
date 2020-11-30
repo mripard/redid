@@ -14,6 +14,9 @@ pub use descriptors::EDIDDetailedTimingDigitalSync;
 pub use descriptors::EDIDDetailedTimingStereo;
 pub use descriptors::EDIDDescriptor;
 pub use descriptors::EDIDDisplayRangeLimits;
+pub use descriptors::EDIDDisplayRangeLimitsCVT;
+pub use descriptors::EDIDDisplayRangeLimitsCVTRatio;
+pub use descriptors::EDIDDisplayRangeLimitsCVTVersion;
 pub use descriptors::EDIDDisplayRangeLimitsSubtype;
 
 #[derive(Clone)]

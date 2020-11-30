@@ -15,6 +15,9 @@ use edid::EDIDDetailedTimingSync;
 use edid::EDIDDisplayColorEncoding;
 use edid::EDIDDisplayColorTypeEncoding;
 use edid::EDIDDisplayRangeLimits;
+use edid::EDIDDisplayRangeLimitsCVT;
+use edid::EDIDDisplayRangeLimitsCVTRatio;
+use edid::EDIDDisplayRangeLimitsCVTVersion;
 use edid::EDIDDisplayRangeLimitsSubtype;
 use edid::EDIDEstablishedTiming;
 use edid::EDIDScreenSizeRatio;
@@ -498,6 +501,107 @@ fn decode_descriptor_dtd(edid: EDID, desc: &Value) -> EDID {
             .set_size(hsize, vsize)))
 }
 
+fn decode_range_limit_cvt(desc: &Value) -> EDIDDisplayRangeLimitsSubtype {
+    let cvt_version_str = desc["CVT Version"]
+        .as_str()
+        .expect("Couldn't decode CVT Version");
+
+    let cvt_version = match cvt_version_str {
+        "1.1" => EDIDDisplayRangeLimitsCVTVersion::V1R1,
+        _ => panic!("Unsupported CVT Version"),
+    };
+    let mut cvt = EDIDDisplayRangeLimitsCVT::new(cvt_version);
+
+    let max_active = desc["Maximum active pixels"]
+        .as_u64()
+        .expect("Couldn't decode the Maximum active pixels") as u16;
+    cvt = cvt.set_maximum_active_pixels_per_line(max_active);
+
+    let aspect_ratio_supported = desc["Supported aspect ratios"]
+        .as_object()
+        .expect("Couldn't decode the supported aspect ratios");
+
+    for (ratio, supported) in aspect_ratio_supported.iter() {
+        let supported = supported.as_bool()
+            .expect("Couldn't decode the ratio value");
+
+        if !supported {
+            continue;
+        }
+
+        let ratio = match ratio.as_str() {
+            "15:9 AR" => EDIDDisplayRangeLimitsCVTRatio::Ratio_15_9,
+            "16:9 AR" => EDIDDisplayRangeLimitsCVTRatio::Ratio_16_9,
+            "16:10 AR" => EDIDDisplayRangeLimitsCVTRatio::Ratio_16_10,
+            "4:3 AR" => EDIDDisplayRangeLimitsCVTRatio::Ratio_4_3,
+            "5:4 AR" => EDIDDisplayRangeLimitsCVTRatio::Ratio_5_4,
+            _ => panic!("Unknown ratio value"),
+        };
+
+        cvt = cvt.add_supported_ratio(ratio);
+    }
+
+    let preferred_ratio_str = desc["Preferred aspect ratio"]
+        .as_str()
+        .expect("Couldn't decode the preferred aspect ratio");
+
+    let preferred_ratio = match preferred_ratio_str {
+        "15:9 AR" => EDIDDisplayRangeLimitsCVTRatio::Ratio_15_9,
+        "16:9 AR" => EDIDDisplayRangeLimitsCVTRatio::Ratio_16_9,
+        "16:10 AR" => EDIDDisplayRangeLimitsCVTRatio::Ratio_16_10,
+        "4:3 AR" => EDIDDisplayRangeLimitsCVTRatio::Ratio_4_3,
+        "5:4 AR" => EDIDDisplayRangeLimitsCVTRatio::Ratio_5_4,
+        _ => panic!("Unknown ratio value"),
+    };
+    cvt = cvt.set_preferred_ratio(preferred_ratio);
+
+    let preferred_refresh_rate = desc["Preferred vertical refresh (Hz)"]
+        .as_u64()
+        .expect("Couldn't decode the preferred refresh rate") as u8;
+    cvt = cvt.set_preferred_refresh_rate(preferred_refresh_rate);
+
+    let blanking = desc["CVT blanking support"]
+        .as_object()
+        .expect("Couldn't decode the CVT blanking support section");
+
+    let reduced_blanking = blanking["Reduced CVT Blanking"]
+        .as_bool()
+        .expect("Couldn't decode Reduced Blanking");
+    cvt = cvt.set_reduced_cvt_blanking(reduced_blanking);
+
+    let standard_blanking = blanking["Standard CVT Blanking"]
+        .as_bool()
+        .expect("Couldn't decode Standard Blanking");
+    cvt = cvt.set_standard_cvt_blanking(standard_blanking);
+
+
+    let scaling = desc["Display scaling support"]
+        .as_object()
+        .expect("Couldn't decode the Display Scaling section");
+
+    let hshrink = scaling["Horizontal Shrink"]
+        .as_bool()
+        .expect("Couldn't decode Horizontal Shrink");
+    cvt = cvt.set_horizontal_shrink(hshrink);
+
+    let vshrink = scaling["Vertical Shrink"]
+        .as_bool()
+        .expect("Couldn't decode Vertical Shrink");
+    cvt = cvt.set_vertical_shrink(vshrink);
+
+    let hstretch = scaling["Horizontal Stretch"]
+        .as_bool()
+        .expect("Couldn't decode Horizontal Stretch");
+    cvt = cvt.set_horizontal_stretch(hstretch);
+
+    let vstretch = scaling["Vertical Stretch"]
+        .as_bool()
+        .expect("Couldn't decode Vertical Stretch");
+    cvt = cvt.set_vertical_stretch(vstretch);
+
+    EDIDDisplayRangeLimitsSubtype::CVTSupported(cvt)
+}
+
 fn decode_display_range(edid: EDID, desc: &Value) -> EDID {
     let hrate = desc["Horizontal rate (kHz)"]
         .as_object()
@@ -533,6 +637,7 @@ fn decode_display_range(edid: EDID, desc: &Value) -> EDID {
         .expect("Couldn't decode the Display Range Subtype");
 
     let subtype = match subtype_str {
+        "CVT supported" => decode_range_limit_cvt(desc),
         "Default GTF supported" => EDIDDisplayRangeLimitsSubtype::DefaultGTF,
         "Range Limits Only - no additional info" => EDIDDisplayRangeLimitsSubtype::RangeLimitsOnly,
         _ => panic!("Couldn't decode the Display Range Subtype"),
