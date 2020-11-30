@@ -523,9 +523,10 @@ fn decode_display_range(edid: EDID, desc: &Value) -> EDID {
         .as_u64()
         .expect("Couldn't decode Display Range Maximum Vertical frequency") as u16;
 
-    let pixel_clock = desc["Pixel clock (MHz)"]
+    let pixel_clock_mhz = desc["Pixel clock (MHz)"]
         .as_f64()
         .expect("Couldn't decode the Display Range Maximum Pixel Frequency") as u16;
+    let pixel_clock = (pixel_clock_mhz as u32) * 1000;
 
     let subtype_str = desc["Subtype"]
         .as_str()

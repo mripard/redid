@@ -1,3 +1,11 @@
+fn round_up(number: u16, multiple: u16) -> u16 {
+    if (number % multiple) == 0 {
+        return number;
+    }
+
+    ((number / multiple) + 1) * 10
+}
+
 #[derive(Clone)]
 #[derive(Copy)]
 #[derive(Debug)]
@@ -161,7 +169,7 @@ pub struct EDIDDisplayRangeLimits {
     max_hfreq: u16,
     min_vfreq: u16,
     max_vfreq: u16,
-    max_pixelclock: u16,
+    max_pixelclock: u32,
 
     subtype: EDIDDisplayRangeLimitsSubtype,
 }
@@ -176,7 +184,7 @@ impl EDIDDisplayRangeLimits {
         self
     }
 
-    pub fn set_pixel_clock_max(mut self, max: u16) -> Self {
+    pub fn set_pixel_clock_max(mut self, max: u32) -> Self {
         self.max_pixelclock = max;
         self
     }
@@ -353,7 +361,11 @@ impl EDIDDescriptor {
                 data.push(max_vfreq as u8);
                 data.push(min_hfreq as u8);
                 data.push(max_hfreq as u8);
-                data.push((limits.max_pixelclock / 10) as u8);
+
+                let pclk = limits.max_pixelclock;
+                let pclk_mhz = (pclk / 1000) as u16;
+                let rounded_pclk_mhz = round_up(pclk_mhz, 10);
+                data.push((rounded_pclk_mhz / 10) as u8);
                 data.push(match limits.subtype {
                     EDIDDisplayRangeLimitsSubtype::DefaultGTF => 0,
                     EDIDDisplayRangeLimitsSubtype::RangeLimitsOnly => 1,
