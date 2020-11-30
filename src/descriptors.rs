@@ -366,12 +366,19 @@ impl EDIDDescriptor {
                 let pclk_mhz = (pclk / 1000) as u16;
                 let rounded_pclk_mhz = round_up(pclk_mhz, 10);
                 data.push((rounded_pclk_mhz / 10) as u8);
-                data.push(match limits.subtype {
-                    EDIDDisplayRangeLimitsSubtype::DefaultGTF => 0,
-                    EDIDDisplayRangeLimitsSubtype::RangeLimitsOnly => 1,
-                } as u8);
-                data.push(0x0a);
-                data.extend_from_slice(&[0x20, 0x20, 0x20, 0x20, 0x20, 0x20]);
+
+                match &limits.subtype {
+                    EDIDDisplayRangeLimitsSubtype::DefaultGTF => {
+                        data.push(0);
+                        data.push(0x0a);
+                        data.extend_from_slice(&[0x20, 0x20, 0x20, 0x20, 0x20, 0x20]);
+                    },
+                    EDIDDisplayRangeLimitsSubtype::RangeLimitsOnly => {
+                        data.push(1);
+                        data.push(0x0a);
+                        data.extend_from_slice(&[0x20, 0x20, 0x20, 0x20, 0x20, 0x20]);
+                    },
+                };
             },
             EDIDDescriptor::DataString(string) => {
                 data.extend_from_slice(&[0, 0, 0, 0xfe, 0]);
