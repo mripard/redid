@@ -28,11 +28,5 @@ for id in $(seq 1 $MAX_ID); do
 		continue
 	fi
 
-	input_type=$(echo "$json" | grep "Video input type" | cut -d ':' -f2 | sed 's/^ *//g')
-	if [ $input_type != "\"Digital\"," ]; then
-		mv $file $file.disabled-analog
-		continue
-	fi
-
 	sleep 1
 done

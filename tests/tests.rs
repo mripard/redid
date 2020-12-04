@@ -15,6 +15,7 @@ use edid::EDIDDetailedTimingDigitalSync;
 use edid::EDIDDetailedTimingStereo;
 use edid::EDIDDetailedTimingSync;
 use edid::EDIDDisplayColorEncoding;
+use edid::EDIDDisplayColorType;
 use edid::EDIDDisplayColorTypeEncoding;
 use edid::EDIDDisplayRangeLimits;
 use edid::EDIDDisplayRangeLimitsCVT;
@@ -26,6 +27,8 @@ use edid::EDIDScreenSizeRatio;
 use edid::EDIDStandardTiming;
 use edid::EDIDStandardTimingRatio;
 use edid::EDIDVersion;
+use edid::EDIDVideoAnalogInterface;
+use edid::EDIDVideoAnalogSyncLevel;
 use edid::EDIDVideoDigitalColorDepth;
 use edid::EDIDVideoDigitalInterface;
 use edid::EDIDVideoDigitalInterfaceStandard;
@@ -74,6 +77,57 @@ fn decode_manufacturer_info(mut edid: EDID, manufacturer_info: &Value) -> EDID {
     };
 
     edid
+}
+
+fn decode_analog_input(mut edid: EDID, basic_display: &Value) -> EDID {
+    let mut analog = EDIDVideoAnalogInterface::new();
+
+    let display_type_str = basic_display["Display color type"]
+        .as_str()
+        .expect("Couldn't decode the display color type");
+    let display_type = match display_type_str {
+        "Monochrome/Grayscale" => EDIDDisplayColorType::MonochromeGrayScale,
+        "RGB color" => EDIDDisplayColorType::RGBColor,
+        _ => panic!("Unknown Color Encoding"),
+    };
+    edid = edid.set_display_color_type_encoding(EDIDDisplayColorTypeEncoding::DisplayColorType(display_type));
+
+    let signal_level_str = basic_display["Video white and sync levels"]
+        .as_str()
+        .expect("Couldn't decode the sync level");
+    let signal_level = match signal_level_str {
+        "+0.7/0 V" => EDIDVideoAnalogSyncLevel::V_0_700_S_0_000,
+        "+0.7/-0.3 V" => EDIDVideoAnalogSyncLevel::V_0_700_S_0_300,
+        _ => panic!("Unknown Sync Level"),
+    };
+    analog = analog.set_signal_level(signal_level);
+
+    let blank_to_black_setup = basic_display["Blank-to-black setup expected"]
+        .as_bool()
+        .expect("Couldn't decode blank-to-black");
+    analog = analog.set_blank_to_black_setup(blank_to_black_setup);
+
+    let separate_sync = basic_display["Separate sync supported"]
+        .as_bool()
+        .expect("Couldn't decode separate sync");
+    analog = analog.set_separate_sync(separate_sync);
+
+    let sync_on_h = basic_display["Composite sync (on HSync) supported"]
+        .as_bool()
+        .expect("Couldn't decode sync on Hsync");
+    analog = analog.set_composite_sync_on_hsync(sync_on_h);
+
+    let sync_on_green = basic_display["Sync on green supported"]
+        .as_bool()
+        .expect("Couldn't decode Sync on green");
+    analog = analog.set_composite_sync_on_green(sync_on_green);
+
+    let vsync_serrations = basic_display["VSync serrated when composite/sync-on-green used"]
+        .as_bool()
+        .expect("Couldn't decode Vsync serrations");
+    analog = analog.set_serrations_on_vsync(vsync_serrations);
+
+    edid.set_input(EDIDVideoInput::Analog(analog))
 }
 
 fn decode_digital_input(mut edid: EDID, basic_display: &Value) -> EDID {
@@ -125,6 +179,7 @@ fn decode_basic_display_parameters(mut edid: EDID, basic_display: &Value) -> EDI
         .expect("Couldn't decode video input type");
 
     edid = match input_str {
+        "Analog" => decode_analog_input(edid, basic_display),
         "Digital" => decode_digital_input(edid, basic_display),
         _ => panic!("Unknown interface type"),
     };

@@ -37,6 +37,73 @@ pub enum EDIDWeekYear {
     ModelYear(u16),
 }
 
+#[allow(non_camel_case_types)]
+#[derive(Clone)]
+#[derive(Copy)]
+#[derive(Debug)]
+#[repr(u8)]
+pub enum EDIDVideoAnalogSyncLevel {
+    V_0_700_S_0_300 = 0,
+    V_0_714_S_0_286,
+    V_1_000_S_0_400,
+    V_0_700_S_0_000,
+}
+
+#[derive(Clone)]
+#[derive(Copy)]
+#[derive(Debug)]
+pub struct EDIDVideoAnalogInterface {
+    blank_to_black_setup: bool,
+    serrations_on_vsync: bool,
+    sync_level: EDIDVideoAnalogSyncLevel,
+    sync_on_green: bool,
+    sync_on_hsync: bool,
+    sync_separate: bool,
+}
+
+impl EDIDVideoAnalogInterface {
+    pub fn new() -> Self {
+        Self {
+            blank_to_black_setup: false,
+            serrations_on_vsync: false,
+            sync_level: EDIDVideoAnalogSyncLevel::V_0_700_S_0_000,
+            sync_on_green: false,
+            sync_on_hsync: false,
+            sync_separate: false,
+        }
+    }
+
+    pub fn set_blank_to_black_setup(mut self, setup: bool) -> Self {
+        self.blank_to_black_setup = setup;
+        self
+    }
+
+    pub fn set_composite_sync_on_green(mut self, sync: bool) -> Self {
+        self.sync_on_green = sync;
+        self
+    }
+
+    pub fn set_composite_sync_on_hsync(mut self, sync: bool) -> Self {
+        self.sync_on_hsync = sync;
+        self
+    }
+
+    pub fn set_signal_level(mut self, level: EDIDVideoAnalogSyncLevel) -> Self {
+        self.sync_level = level;
+        self
+    }
+
+    pub fn set_separate_sync(mut self, sync: bool) -> Self {
+        self.sync_separate = sync;
+        self
+    }
+
+    pub fn set_serrations_on_vsync(mut self, sync: bool) -> Self {
+        self.serrations_on_vsync = sync;
+        self
+    }
+}
+
 #[derive(Clone)]
 #[derive(Copy)]
 #[derive(Debug)]
@@ -83,6 +150,7 @@ impl EDIDVideoDigitalInterface {
 #[derive(Copy)]
 #[derive(Debug)]
 pub enum EDIDVideoInput {
+    Analog(EDIDVideoAnalogInterface),
     Digital(EDIDVideoDigitalInterface),
 }
 
@@ -120,7 +188,8 @@ pub enum EDIDDisplayColorEncoding {
 #[derive(Copy)]
 #[derive(Debug)]
 pub enum EDIDDisplayColorTypeEncoding {
-    ColorEncoding(EDIDDisplayColorEncoding)
+    ColorEncoding(EDIDDisplayColorEncoding),
+    DisplayColorType(EDIDDisplayColorType),
 }
 
 #[derive(Clone)]
@@ -393,6 +462,31 @@ impl EDID {
         }
 
         match self.input {
+            EDIDVideoInput::Analog(itf) => {
+                let mut byte = ((itf.sync_level as u8) & 0x3) << 5;
+
+                if itf.blank_to_black_setup {
+                    byte |= 1 << 4;
+                }
+
+                if itf.sync_separate {
+                    byte |= 1 << 3;
+                }
+
+                if itf.sync_on_hsync {
+                    byte |= 1 << 2;
+                }
+
+                if itf.sync_on_green {
+                    byte |= 1 << 1;
+                }
+
+                if itf.serrations_on_vsync {
+                    byte |= 1;
+                }
+
+                writer.write(&[byte]).unwrap();
+            },
             EDIDVideoInput::Digital(itf) => {
                 let mut byte: u8 = 0x80;
 
@@ -451,15 +545,23 @@ impl EDID {
             feature |= 1;
         }
 
-        // FIXME: Support Color Type for Analog
         match self.input {
+            EDIDVideoInput::Analog(_) => {
+                match self.feature_color_type_encoding {
+                    EDIDDisplayColorTypeEncoding::DisplayColorType(color_type) => {
+                        feature |= (color_type as u8) << 3;
+                    }
+                    _ => panic!("Invalid Display Color Type / Color Encoding"),
+                }
+            },
             EDIDVideoInput::Digital(_) => {
                 match self.feature_color_type_encoding {
                     EDIDDisplayColorTypeEncoding::ColorEncoding(enc) => {
                         feature |= (enc as u8) << 3;
                     },
+                    _ => panic!("Invalid Display Color Type / Color Encoding"),
                 }
-            }
+            },
         }
 
         // FIXME: Other features support
