@@ -574,6 +574,11 @@ fn decode_range_limit_cvt(desc: &Value) -> EDIDDisplayRangeLimitsSubtype {
         .expect("Couldn't decode the Maximum active pixels") as u16;
     cvt = cvt.set_maximum_active_pixels_per_line(max_active);
 
+    let add_precision = desc["Additional Pixel Clock (MHz)"]
+        .as_f64()
+        .expect("Couldn't decode the Additional Pixel Clock precision") * 1000.0;
+    cvt = cvt.set_additional_precision(add_precision as u16);
+
     let aspect_ratio_supported = desc["Supported aspect ratios"]
         .as_object()
         .expect("Couldn't decode the supported aspect ratios");
@@ -631,7 +636,6 @@ fn decode_range_limit_cvt(desc: &Value) -> EDIDDisplayRangeLimitsSubtype {
         .expect("Couldn't decode Standard Blanking");
     cvt = cvt.set_standard_cvt_blanking(standard_blanking);
 
-
     let scaling = desc["Display scaling support"]
         .as_object()
         .expect("Couldn't decode the Display Scaling section");
@@ -684,17 +688,23 @@ fn decode_display_range(edid: EDID, desc: &Value) -> EDID {
         .as_u64()
         .expect("Couldn't decode Display Range Maximum Vertical frequency") as u16;
 
-    let pixel_clock_mhz = desc["Pixel clock (MHz)"]
+    let mut pixel_clock = desc["Pixel clock (MHz)"]
         .as_f64()
-        .expect("Couldn't decode the Display Range Maximum Pixel Frequency") as u16;
-    let pixel_clock = (pixel_clock_mhz as u32) * 1000;
+        .expect("Couldn't decode the Display Range Maximum Pixel Frequency");
 
     let subtype_str = desc["Subtype"]
         .as_str()
         .expect("Couldn't decode the Display Range Subtype");
 
     let subtype = match subtype_str {
-        "CVT supported" => decode_range_limit_cvt(desc),
+        "CVT supported" => {
+            let add_precision = desc["Additional Pixel Clock (MHz)"]
+                .as_f64()
+                .expect("Couldn't decode the additional precision");
+
+            pixel_clock += add_precision;
+            decode_range_limit_cvt(desc)
+        },
         "Default GTF supported" => EDIDDisplayRangeLimitsSubtype::DefaultGTF,
         "Range Limits Only - no additional info" => EDIDDisplayRangeLimitsSubtype::RangeLimitsOnly,
         _ => panic!("Couldn't decode the Display Range Subtype"),
@@ -704,7 +714,7 @@ fn decode_display_range(edid: EDID, desc: &Value) -> EDID {
         EDIDDisplayRangeLimits::new()
             .set_horizontal_rate_range(hrate_min, hrate_max)
             .set_vertical_rate_range(vrate_min, vrate_max)
-            .set_pixel_clock_max(pixel_clock)
+            .set_pixel_clock_max(pixel_clock as u16)
             .set_subtype(subtype)
     ))
 }

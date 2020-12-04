@@ -169,6 +169,7 @@ pub enum EDIDDisplayRangeLimitsCVTRatio {
 #[derive(Debug)]
 pub struct EDIDDisplayRangeLimitsCVT {
     version: EDIDDisplayRangeLimitsCVTVersion,
+    additional_precision: u16,
     maximum_active_pixels: u16,
     supported_ratios: Vec<EDIDDisplayRangeLimitsCVTRatio>,
     preferred_ratio: EDIDDisplayRangeLimitsCVTRatio,
@@ -185,6 +186,7 @@ impl EDIDDisplayRangeLimitsCVT {
     pub fn new(version: EDIDDisplayRangeLimitsCVTVersion) -> Self {
         Self {
             version,
+            additional_precision: 0,
             maximum_active_pixels: 0,
             supported_ratios: Vec::new(),
             preferred_ratio: EDIDDisplayRangeLimitsCVTRatio::Ratio_4_3,
@@ -200,6 +202,11 @@ impl EDIDDisplayRangeLimitsCVT {
 
     pub fn add_supported_ratio(mut self, ratio: EDIDDisplayRangeLimitsCVTRatio) -> Self {
         self.supported_ratios.push(ratio);
+        self
+    }
+
+    pub fn set_additional_precision(mut self, prec: u16) -> Self {
+        self.additional_precision = prec;
         self
     }
 
@@ -271,7 +278,7 @@ pub struct EDIDDisplayRangeLimits {
     max_hfreq: u16,
     min_vfreq: u16,
     max_vfreq: u16,
-    max_pixelclock: u32,
+    max_pixelclock: u16,
 
     subtype: EDIDDisplayRangeLimitsSubtype,
 }
@@ -286,7 +293,7 @@ impl EDIDDisplayRangeLimits {
         self
     }
 
-    pub fn set_pixel_clock_max(mut self, max: u32) -> Self {
+    pub fn set_pixel_clock_max(mut self, max: u16) -> Self {
         self.max_pixelclock = max;
         self
     }
@@ -536,10 +543,8 @@ impl EDIDDescriptor {
                 data.push(min_hfreq as u8);
                 data.push(max_hfreq as u8);
 
-                let pclk = limits.max_pixelclock;
-                let pclk_mhz = (pclk / 1000) as u16;
-                let rounded_pclk_mhz = round_up(pclk_mhz, 10);
-                data.push((rounded_pclk_mhz / 10) as u8);
+                let rounded_pclk = round_up(limits.max_pixelclock, 10);
+                data.push((rounded_pclk / 10) as u8);
 
                 match &limits.subtype {
                     EDIDDisplayRangeLimitsSubtype::DefaultGTF => {
@@ -559,9 +564,7 @@ impl EDIDDescriptor {
                             EDIDDisplayRangeLimitsCVTVersion::V1R1 => data.push(0x11),
                         };
 
-                        let rounded_pclk_khz = rounded_pclk_mhz as u32 * 1000;
-                        let diff_pclk = rounded_pclk_khz - pclk;
-                        let add_prec = ((diff_pclk / 250) & 0x3f) as u8;
+                        let add_prec = ((cvt.additional_precision / 250) & 0x3f) as u8;
                         let act_pix = cvt.maximum_active_pixels / 8;
                         data.push((add_prec << 2) | (((act_pix >> 8) & 0x3) as u8));
                         data.push((act_pix & 0xff) as u8);
