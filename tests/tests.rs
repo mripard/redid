@@ -808,17 +808,23 @@ fn decode_base_edid(mut edid: EDID, json: &Value) -> EDID {
 }
 
 fn edid_equals(val1: &[u8], val2: &[u8]) -> bool {
+    let mut checksum_offset = [0; 2];
+
     if val1.len() != val2.len() {
         return false;
     }
 
-    for i in 0..val1.len() {
+    for i in 0..0x80 {
         if val1[i] == val2[i] {
             continue;
         }
 
         if (i > 0x36) && ((i - 0x36) % 18) == 17 {
-            if ((val1[i] ^ val2[i]) & 0x61) == 1 {
+            let diff = (val1[i] ^ val2[i]) & 0x61;
+
+            if diff == 1 {
+                checksum_offset[0] += val1[i] - diff;
+                checksum_offset[1] += val2[i] - diff;
                 continue;
             }
         }
@@ -833,6 +839,23 @@ fn edid_equals(val1: &[u8], val2: &[u8]) -> bool {
             st2.sort();
 
             if st1 == st2 {
+                continue;
+            }
+        }
+
+        // We don't support extensions just yet. Ignore it,
+        // and account for that difference in the checksum
+        if i == 0x7e {
+            checksum_offset[0] += val1[i];
+            checksum_offset[1] += val2[i];
+            continue;
+        }
+
+        if i == 0x7f {
+            let adjusted_val1 = val1[i].wrapping_sub(checksum_offset[1]);
+            let adjusted_val2 = val2[i].wrapping_sub(checksum_offset[0]);
+
+            if adjusted_val1 == adjusted_val2 {
                 continue;
             }
         }
@@ -868,5 +891,5 @@ fn test_edid(edid: &str) {
     let output_data = decode_base_edid(edid, &json["Base"])
         .serialize();
 
-    assert!(edid_equals(&input_data[0..0x7e], &output_data.as_slice()[0..0x7e]));
+    assert!(edid_equals(&input_data, &output_data.as_slice()));
 }

@@ -558,8 +558,13 @@ impl EDID {
         // FIXME: Support the extensions
         writer.write(&[0]).unwrap();
 
-        // FIXME: Support the cheksum
-        writer.write(&[0]).unwrap();
+        let mut sum: u8 = 0;
+        for byte in writer.iter() {
+            sum = sum.wrapping_add(*byte);
+        }
+
+        let checksum = 0u8.wrapping_sub(sum);
+        writer.write(&[checksum]).unwrap();
 
         writer
     }
