@@ -843,7 +843,7 @@ fn decode_descriptors(mut edid: EDID, descriptors: &Value) -> EDID {
             "Dummy descriptor" => edid.add_descriptor(EDIDDescriptor::Dummy),
             "Established Timings III" => decode_descriptor_established_timings(edid, desc),
             "Manufacturer Specified Display Descriptor" => decode_custom_descriptor(edid, desc),
-            _ => panic!("Couldn't decode the descriptor's type"),
+            _ => panic!("Couldn't decode the descriptor's type: {}", desc_type),
         };
     }
 
