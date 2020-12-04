@@ -932,7 +932,7 @@ fn edid_equals(val1: &[u8], val2: &[u8]) -> bool {
     true
 }
 
-#[test_resources("tests/edid-db/*.bin")]
+#[test_resources("tests/edid-db/edid.tv/*.bin")]
 fn test_edid(edid: &str) {
     let output = Command::new("tests/tools/edid-chamelium/edid2json.py")
         .arg(edid)
