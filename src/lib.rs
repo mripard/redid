@@ -13,6 +13,8 @@ pub use descriptors::EDIDDetailedTimingAnalogSync;
 pub use descriptors::EDIDDetailedTimingDigitalSync;
 pub use descriptors::EDIDDetailedTimingStereo;
 pub use descriptors::EDIDDescriptor;
+pub use descriptors::EDIDDescriptorEstablishedTimings;
+pub use descriptors::EDIDDescriptorEstablishedTimingsIII;
 pub use descriptors::EDIDDisplayRangeLimits;
 pub use descriptors::EDIDDisplayRangeLimitsCVT;
 pub use descriptors::EDIDDisplayRangeLimitsCVTRatio;

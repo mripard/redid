@@ -7,6 +7,8 @@ use std::process::Command;
 
 use edid::EDIDChromaCoordinate;
 use edid::EDIDDescriptor;
+use edid::EDIDDescriptorEstablishedTimings;
+use edid::EDIDDescriptorEstablishedTimingsIII;
 use edid::EDIDDetailedTiming;
 use edid::EDIDDetailedTimingAnalogSync;
 use edid::EDIDDetailedTimingDigitalSync;
@@ -652,6 +654,73 @@ fn decode_display_range(edid: EDID, desc: &Value) -> EDID {
     ))
 }
 
+fn decode_descriptor_established_timings(edid: EDID, desc: &Value) -> EDID {
+    let map = desc["Established Timings"]
+        .as_object()
+        .expect("Couldn't decode the established timings section");
+
+    let mut timings = EDIDDescriptorEstablishedTimings::new();
+    for (timing, timing_val) in map.iter() {
+        println!("{}, {}", timing, timing_val);
+        let supported = timing_val
+            .as_bool()
+            .expect("Couldn't decode the timing value");
+
+        if !supported {
+            continue;
+        }
+
+        let et = match timing.as_str() {
+            "1024 x 768 @ 85 Hz" => EDIDDescriptorEstablishedTimingsIII::ET_1024_768_85Hz,
+            "1152 x 864 @ 75 Hz" => EDIDDescriptorEstablishedTimingsIII::ET_1152_864_75Hz,
+            "1280 x 1024 @ 60 Hz" => EDIDDescriptorEstablishedTimingsIII::ET_1280_1024_60Hz,
+            "1280 x 1024 @ 85 Hz" => EDIDDescriptorEstablishedTimingsIII::ET_1280_1024_85Hz,
+            "1280 x 768 @ 60 Hz" => EDIDDescriptorEstablishedTimingsIII::ET_1280_768_60Hz,
+            "1280 x 768 @ 60 Hz (RB)" => EDIDDescriptorEstablishedTimingsIII::ET_1280_768_60Hz_RB,
+            "1280 x 768 @ 75 Hz" => EDIDDescriptorEstablishedTimingsIII::ET_1280_768_75Hz,
+            "1280 x 768 @ 85 Hz" => EDIDDescriptorEstablishedTimingsIII::ET_1280_768_85Hz,
+            "1280 x 960 @ 60 Hz" => EDIDDescriptorEstablishedTimingsIII::ET_1280_960_60Hz,
+            "1280 x 960 @ 85 Hz" => EDIDDescriptorEstablishedTimingsIII::ET_1280_960_85Hz,
+            "1360 x 768 @ 60 Hz" => EDIDDescriptorEstablishedTimingsIII::ET_1360_768_60Hz,
+            "1400 x 1050 @ 60 Hz" => EDIDDescriptorEstablishedTimingsIII::ET_1400_1050_60Hz,
+            "1400 x 1050 @ 60 Hz (RB)" => EDIDDescriptorEstablishedTimingsIII::ET_1400_1050_60Hz_RB,
+            "1400 x 1050 @ 75 Hz" => EDIDDescriptorEstablishedTimingsIII::ET_1400_1050_75Hz,
+            "1400 x 1050 @ 85 Hz" => EDIDDescriptorEstablishedTimingsIII::ET_1400_1050_85Hz,
+            "1440 x 900 @ 60 Hz" => EDIDDescriptorEstablishedTimingsIII::ET_1440_900_60Hz,
+            "1440 x 900 @ 60 Hz (RB)" => EDIDDescriptorEstablishedTimingsIII::ET_1440_900_60Hz_RB,
+            "1440 x 900 @ 75 Hz" => EDIDDescriptorEstablishedTimingsIII::ET_1440_900_75Hz,
+            "1440 x 900 @ 85 Hz" => EDIDDescriptorEstablishedTimingsIII::ET_1440_900_85Hz,
+            "1600 x 1200 @ 60 Hz" => EDIDDescriptorEstablishedTimingsIII::ET_1600_1200_60Hz,
+            "1600 x 1200 @ 65 Hz" => EDIDDescriptorEstablishedTimingsIII::ET_1600_1200_65Hz,
+            "1600 x 1200 @ 70 Hz" => EDIDDescriptorEstablishedTimingsIII::ET_1600_1200_70Hz,
+            "1600 x 1200 @ 75 Hz" => EDIDDescriptorEstablishedTimingsIII::ET_1600_1200_75Hz,
+            "1600 x 1200 @ 85 Hz" => EDIDDescriptorEstablishedTimingsIII::ET_1600_1200_85Hz,
+            "1680 x 1050 @ 60 Hz" => EDIDDescriptorEstablishedTimingsIII::ET_1680_1050_60Hz,
+            "1680 x 1050 @ 60 Hz (RB)" => EDIDDescriptorEstablishedTimingsIII::ET_1680_1050_60Hz_RB,
+            "1680 x 1050 @ 75 Hz" => EDIDDescriptorEstablishedTimingsIII::ET_1680_1050_75Hz,
+            "1680 x 1050 @ 85 Hz" => EDIDDescriptorEstablishedTimingsIII::ET_1680_1050_85Hz,
+            "1792 x 1344 @ 60 Hz" => EDIDDescriptorEstablishedTimingsIII::ET_1792_1344_60Hz,
+            "1792 x 1344 @ 75 Hz" => EDIDDescriptorEstablishedTimingsIII::ET_1792_1344_75Hz,
+            "1856 x 1392 @ 60 Hz" => EDIDDescriptorEstablishedTimingsIII::ET_1856_1392_60Hz,
+            "1856 x 1392 @ 75 Hz" => EDIDDescriptorEstablishedTimingsIII::ET_1856_1392_75Hz,
+            "1920 x 1200 @ 60 Hz" => EDIDDescriptorEstablishedTimingsIII::ET_1920_1200_60Hz,
+            "1920 x 1200 @ 60 Hz (RB)" => EDIDDescriptorEstablishedTimingsIII::ET_1920_1200_60Hz_RB,
+            "1920 x 1200 @ 75 Hz" => EDIDDescriptorEstablishedTimingsIII::ET_1920_1200_75Hz,
+            "1920 x 1200 @ 85 Hz" => EDIDDescriptorEstablishedTimingsIII::ET_1920_1200_85Hz,
+            "1920 x 1440 @ 60 Hz" => EDIDDescriptorEstablishedTimingsIII::ET_1920_1440_60Hz,
+            "1920 x 1440 @ 75 Hz" => EDIDDescriptorEstablishedTimingsIII::ET_1920_1440_75Hz,
+            "640 x 350 @ 85 Hz" => EDIDDescriptorEstablishedTimingsIII::ET_640_350_85Hz,
+            "640 x 400 @ 85 Hz" => EDIDDescriptorEstablishedTimingsIII::ET_640_400_85Hz,
+            "640 x 480 @ 85 Hz" => EDIDDescriptorEstablishedTimingsIII::ET_640_480_85Hz,
+            _ => panic!("Couldn't decode the Establish Timing"),
+        };
+
+        timings = timings.add_timing(et);
+    }
+
+    edid.add_descriptor(EDIDDescriptor::EstablishedTimings(timings))
+}
+
 fn decode_data_string(edid: EDID, desc: &Value) -> EDID {
     let string = desc["Data string"].as_str()
         .expect("Couldn't decode Product Name")
@@ -707,6 +776,7 @@ fn decode_descriptors(mut edid: EDID, descriptors: &Value) -> EDID {
             "Display Product Name" => decode_descriptor_name(edid, desc),
             "Display Product Serial Number" => decode_descriptor_serial(edid, desc),
             "Dummy descriptor" => edid.add_descriptor(EDIDDescriptor::Dummy),
+            "Established Timings III" => decode_descriptor_established_timings(edid, desc),
             "Manufacturer Specified Display Descriptor" => decode_custom_descriptor(edid, desc),
             _ => panic!("Couldn't decode the descriptor's type"),
         };

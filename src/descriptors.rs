@@ -304,6 +304,77 @@ impl EDIDDisplayRangeLimits {
     }
 }
 
+#[allow(non_camel_case_types)]
+#[derive(Copy)]
+#[derive(Clone)]
+#[derive(Debug)]
+pub enum EDIDDescriptorEstablishedTimingsIII {
+    ET_1152_864_75Hz = 0,
+    ET_1024_768_85Hz,
+    ET_800_600_85Hz,
+    ET_848_480_60Hz,
+    ET_640_480_85Hz,
+    ET_720_400_85Hz,
+    ET_640_400_85Hz,
+    ET_640_350_85Hz,
+    ET_1280_1024_85Hz,
+    ET_1280_1024_60Hz,
+    ET_1280_960_85Hz,
+    ET_1280_960_60Hz,
+    ET_1280_768_85Hz,
+    ET_1280_768_75Hz,
+    ET_1280_768_60Hz,
+    ET_1280_768_60Hz_RB,
+    ET_1400_1050_75Hz,
+    ET_1400_1050_60Hz,
+    ET_1400_1050_60Hz_RB,
+    ET_1440_900_85Hz,
+    ET_1440_900_75Hz,
+    ET_1440_900_60Hz,
+    ET_1440_900_60Hz_RB,
+    ET_1360_768_60Hz,
+    ET_1600_1200_70Hz,
+    ET_1600_1200_65Hz,
+    ET_1600_1200_60Hz,
+    ET_1680_1050_85Hz,
+    ET_1680_1050_75Hz,
+    ET_1680_1050_60Hz,
+    ET_1680_1050_60Hz_RB,
+    ET_1400_1050_85Hz,
+    ET_1920_1200_60Hz,
+    ET_1920_1200_60Hz_RB,
+    ET_1856_1392_75Hz,
+    ET_1856_1392_60Hz,
+    ET_1792_1344_75Hz,
+    ET_1792_1344_60Hz,
+    ET_1600_1200_85Hz,
+    ET_1600_1200_75Hz,
+
+    ET_1920_1440_75Hz = 44,
+    ET_1920_1440_60Hz,
+    ET_1920_1200_85Hz,
+    ET_1920_1200_75Hz,
+}
+
+#[derive(Clone)]
+#[derive(Debug)]
+pub struct EDIDDescriptorEstablishedTimings {
+    et: Vec<EDIDDescriptorEstablishedTimingsIII>,
+}
+
+impl EDIDDescriptorEstablishedTimings {
+    pub fn new() -> Self {
+        Self {
+            et: Vec::new(),
+        }
+    }
+
+    pub fn add_timing(mut self, et: EDIDDescriptorEstablishedTimingsIII) -> Self {
+        self.et.push(et);
+        self
+    }
+}
+
 #[derive(Clone)]
 #[derive(Debug)]
 pub enum EDIDDescriptor {
@@ -314,6 +385,7 @@ pub enum EDIDDescriptor {
     ProductSerialNumber(String),
     DetailedTiming(EDIDDetailedTiming),
     DisplayRangeLimits(EDIDDisplayRangeLimits),
+    EstablishedTimings(EDIDDescriptorEstablishedTimings),
 }
 
 impl EDIDDescriptor {
@@ -601,6 +673,21 @@ impl EDIDDescriptor {
                     }
                 }
             },
+            EDIDDescriptor::EstablishedTimings(et) => {
+                data.extend_from_slice(&[0, 0, 0, 0xf7, 0]);
+                data.push(0x0a);
+
+                let mut bytes: [u8; 6] = [0; 6];
+                for timing in et.et.iter() {
+                    let id = *timing as u32;
+                    let idx = (id / 8) as usize;
+                    let shift = id % 8;
+
+                    bytes[idx] |= 1 << shift;
+                }
+                data.extend_from_slice(&bytes);
+                data.extend_from_slice(&[0; 6])
+            }
         }
 
         data
