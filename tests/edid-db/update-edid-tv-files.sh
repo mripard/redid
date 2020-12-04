@@ -3,12 +3,12 @@
 MAX_ID=1000
 
 for id in $(seq 1 $MAX_ID); do
-	if ls edid.tv-$id* > /dev/null 2>&1; then
+	file="edid.tv-$id.bin"
+	if ls $file* > /dev/null 2>&1; then
 		continue
 	fi
 
 	echo "$id not found, downloading..."
-	file="edid.tv-$id.bin"
 	curl -sfL "http://edid.tv/edid/$id/download/" -o $file
 	if [ $? -ne 0 ]; then
 		echo "Couldn't download id $id, stopping."
