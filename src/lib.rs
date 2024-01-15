@@ -317,7 +317,7 @@ impl EDID {
             feature_srgb_default: false,
             feature_preferred_timings_native: false,
 
-            chroma_coord: EnumMap::<EDIDChromaCoordinate, EDIDChromaPoint>::new(),
+            chroma_coord: EnumMap::<EDIDChromaCoordinate, EDIDChromaPoint>::default(),
             established_timings: Vec::new(),
             standard_timings: Vec::new(),
             descriptors: Vec::new(),
