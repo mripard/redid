@@ -1,9 +1,17 @@
-fn round_up(number: u16, multiple: u16) -> u16 {
-    if (number % multiple) == 0 {
+use num_traits::{Euclid, FromPrimitive, Num};
+
+pub(crate) fn round_up<T>(number: T, multiple: T) -> T
+where
+    T: Num + Euclid + FromPrimitive
+{
+    let rem = number.rem_euclid(&multiple);
+
+    if rem.is_zero() {
         return number;
     }
 
-    ((number / multiple) + 1) * 10
+    let div = number.div_euclid(&multiple) + T::one();
+    div * multiple
 }
 
 #[derive(Clone)]
