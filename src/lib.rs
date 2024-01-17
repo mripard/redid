@@ -1,36 +1,32 @@
 #![warn(missing_debug_implementations)]
 #![warn(rust_2018_idioms)]
 
-use std::io::Write;
 use enum_map::Enum;
 use enum_map::EnumMap;
+use std::io::Write;
 
 mod descriptors;
 
-pub use descriptors::EDIDDetailedTiming;
-pub use descriptors::EDIDDetailedTimingSync;
-pub use descriptors::EDIDDetailedTimingAnalogSync;
-pub use descriptors::EDIDDetailedTimingDigitalSync;
-pub use descriptors::EDIDDetailedTimingStereo;
 pub use descriptors::EDIDDescriptor;
 pub use descriptors::EDIDDescriptorEstablishedTimings;
 pub use descriptors::EDIDDescriptorEstablishedTimingsIII;
+pub use descriptors::EDIDDetailedTiming;
+pub use descriptors::EDIDDetailedTimingAnalogSync;
+pub use descriptors::EDIDDetailedTimingDigitalSync;
+pub use descriptors::EDIDDetailedTimingStereo;
+pub use descriptors::EDIDDetailedTimingSync;
 pub use descriptors::EDIDDisplayRangeLimits;
 pub use descriptors::EDIDDisplayRangeLimitsCVT;
 pub use descriptors::EDIDDisplayRangeLimitsCVTRatio;
 pub use descriptors::EDIDDisplayRangeLimitsCVTVersion;
 pub use descriptors::EDIDDisplayRangeLimitsSubtype;
 
-#[derive(Clone)]
-#[derive(Copy)]
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum EDIDVersion {
     V1R4,
 }
 
-#[derive(Clone)]
-#[derive(Copy)]
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum EDIDWeekYear {
     YearOfManufacture(u16),
     WeekYearOfManufacture(u8, u16),
@@ -38,9 +34,7 @@ pub enum EDIDWeekYear {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Clone)]
-#[derive(Copy)]
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 #[repr(u8)]
 pub enum EDIDVideoAnalogSyncLevel {
     V_0_700_S_0_300 = 0,
@@ -49,9 +43,7 @@ pub enum EDIDVideoAnalogSyncLevel {
     V_0_700_S_0_000,
 }
 
-#[derive(Clone)]
-#[derive(Copy)]
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct EDIDVideoAnalogInterface {
     blank_to_black_setup: bool,
     serrations_on_vsync: bool,
@@ -104,9 +96,7 @@ impl EDIDVideoAnalogInterface {
     }
 }
 
-#[derive(Clone)]
-#[derive(Copy)]
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum EDIDVideoDigitalColorDepth {
     Undefined = 0,
     Depth6bpc,
@@ -117,9 +107,7 @@ pub enum EDIDVideoDigitalColorDepth {
     Depth16bpc,
 }
 
-#[derive(Clone)]
-#[derive(Copy)]
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum EDIDVideoDigitalInterfaceStandard {
     Undefined = 0,
     DVI,
@@ -129,16 +117,17 @@ pub enum EDIDVideoDigitalInterfaceStandard {
     DisplayPort,
 }
 
-#[derive(Clone)]
-#[derive(Copy)]
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct EDIDVideoDigitalInterface {
     color_depth: EDIDVideoDigitalColorDepth,
     interface: EDIDVideoDigitalInterfaceStandard,
 }
 
 impl EDIDVideoDigitalInterface {
-    pub fn new(interface: EDIDVideoDigitalInterfaceStandard, bpc: EDIDVideoDigitalColorDepth) -> Self {
+    pub fn new(
+        interface: EDIDVideoDigitalInterfaceStandard,
+        bpc: EDIDVideoDigitalColorDepth,
+    ) -> Self {
         EDIDVideoDigitalInterface {
             interface,
             color_depth: bpc,
@@ -146,17 +135,13 @@ impl EDIDVideoDigitalInterface {
     }
 }
 
-#[derive(Clone)]
-#[derive(Copy)]
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum EDIDVideoInput {
     Analog(EDIDVideoAnalogInterface),
     Digital(EDIDVideoDigitalInterface),
 }
 
-#[derive(Clone)]
-#[derive(Copy)]
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum EDIDScreenSizeRatio {
     None,
     Size(u8, u8),
@@ -164,9 +149,7 @@ pub enum EDIDScreenSizeRatio {
     PortraitRatio(f32),
 }
 
-#[derive(Clone)]
-#[derive(Copy)]
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum EDIDDisplayColorType {
     MonochromeGrayScale,
     RGBColor,
@@ -174,9 +157,7 @@ pub enum EDIDDisplayColorType {
     Undefined,
 }
 
-#[derive(Clone)]
-#[derive(Copy)]
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum EDIDDisplayColorEncoding {
     RGB444,
     RGB444YCbCr444,
@@ -184,27 +165,19 @@ pub enum EDIDDisplayColorEncoding {
     RGB444YCbCr444YCbCr422,
 }
 
-#[derive(Clone)]
-#[derive(Copy)]
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum EDIDDisplayColorTypeEncoding {
     ColorEncoding(EDIDDisplayColorEncoding),
     DisplayColorType(EDIDDisplayColorType),
 }
 
-#[derive(Clone)]
-#[derive(Copy)]
-#[derive(Debug)]
-#[derive(Default)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct EDIDChromaPoint {
     x: u16,
     y: u16,
 }
 
-#[derive(Clone)]
-#[derive(Copy)]
-#[derive(Debug)]
-#[derive(Enum)]
+#[derive(Clone, Copy, Debug, Enum)]
 pub enum EDIDChromaCoordinate {
     White,
     Blue,
@@ -213,9 +186,7 @@ pub enum EDIDChromaCoordinate {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Clone)]
-#[derive(Copy)]
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum EDIDEstablishedTiming {
     ET_1024_768_60Hz,
     ET_1024_768_70Hz,
@@ -237,9 +208,7 @@ pub enum EDIDEstablishedTiming {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Clone)]
-#[derive(Copy)]
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum EDIDStandardTimingRatio {
     Ratio_16_10,
     Ratio_4_3,
@@ -247,9 +216,7 @@ pub enum EDIDStandardTimingRatio {
     Ratio_16_9,
 }
 
-#[derive(Clone)]
-#[derive(Copy)]
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct EDIDStandardTiming {
     x: u16,
     ratio: EDIDStandardTimingRatio,
@@ -313,7 +280,9 @@ impl EDID {
             feature_suspend: false,
             feature_active_off: false,
             feature_continuous_frequency: false,
-            feature_color_type_encoding: EDIDDisplayColorTypeEncoding::ColorEncoding(EDIDDisplayColorEncoding::RGB444),
+            feature_color_type_encoding: EDIDDisplayColorTypeEncoding::ColorEncoding(
+                EDIDDisplayColorEncoding::RGB444,
+            ),
             feature_srgb_default: false,
             feature_preferred_timings_native: false,
 
@@ -418,7 +387,9 @@ impl EDID {
     pub fn serialize(self) -> Vec<u8> {
         let mut writer = Vec::with_capacity(0x80);
 
-        writer.write(&[0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00]).unwrap();
+        writer
+            .write(&[0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00])
+            .unwrap();
 
         let manufacturer = &self.manufacturer;
         let mut comp = ((manufacturer[0] as u8) - ('@' as u8)) << 2;
@@ -443,11 +414,11 @@ impl EDID {
             EDIDWeekYear::ModelYear(year) => {
                 writer.write(&[0xff]).unwrap();
                 writer.write(&[(year - 1990) as u8]).unwrap();
-            },
+            }
             EDIDWeekYear::YearOfManufacture(year) => {
                 writer.write(&[0x00]).unwrap();
                 writer.write(&[(year - 1990) as u8]).unwrap();
-            },
+            }
             EDIDWeekYear::WeekYearOfManufacture(week, year) => {
                 writer.write(&[week]).unwrap();
                 writer.write(&[(year - 1990) as u8]).unwrap();
@@ -458,7 +429,7 @@ impl EDID {
             EDIDVersion::V1R4 => {
                 writer.write(&[1]).unwrap();
                 writer.write(&[4]).unwrap();
-            },
+            }
         }
 
         match self.input {
@@ -486,7 +457,7 @@ impl EDID {
                 }
 
                 writer.write(&[byte]).unwrap();
-            },
+            }
             EDIDVideoInput::Digital(itf) => {
                 let mut byte: u8 = 0x80;
 
@@ -501,16 +472,16 @@ impl EDID {
                 let stored = (ratio * 100.0 - 99.0).round() as u8;
                 writer.write(&[stored]).unwrap();
                 writer.write(&[0]).unwrap();
-            },
+            }
             EDIDScreenSizeRatio::PortraitRatio(ratio) => {
                 let stored = (100.0 / ratio - 99.0).round() as u8;
                 writer.write(&[0]).unwrap();
                 writer.write(&[stored]).unwrap();
-            },
+            }
             EDIDScreenSizeRatio::Size(x, y) => {
                 writer.write(&[x]).unwrap();
                 writer.write(&[y]).unwrap();
-            },
+            }
             EDIDScreenSizeRatio::None => {
                 writer.write(&[0]).unwrap();
                 writer.write(&[0]).unwrap();
@@ -546,21 +517,17 @@ impl EDID {
         }
 
         match self.input {
-            EDIDVideoInput::Analog(_) => {
-                match self.feature_color_type_encoding {
-                    EDIDDisplayColorTypeEncoding::DisplayColorType(color_type) => {
-                        feature |= (color_type as u8) << 3;
-                    }
-                    _ => panic!("Invalid Display Color Type / Color Encoding"),
+            EDIDVideoInput::Analog(_) => match self.feature_color_type_encoding {
+                EDIDDisplayColorTypeEncoding::DisplayColorType(color_type) => {
+                    feature |= (color_type as u8) << 3;
                 }
+                _ => panic!("Invalid Display Color Type / Color Encoding"),
             },
-            EDIDVideoInput::Digital(_) => {
-                match self.feature_color_type_encoding {
-                    EDIDDisplayColorTypeEncoding::ColorEncoding(enc) => {
-                        feature |= (enc as u8) << 3;
-                    },
-                    _ => panic!("Invalid Display Color Type / Color Encoding"),
+            EDIDVideoInput::Digital(_) => match self.feature_color_type_encoding {
+                EDIDDisplayColorTypeEncoding::ColorEncoding(enc) => {
+                    feature |= (enc as u8) << 3;
                 }
+                _ => panic!("Invalid Display Color Type / Color Encoding"),
             },
         }
 
@@ -640,21 +607,19 @@ impl EDID {
                     byte1 |= ratio << 6;
 
                     writer.write(&[byte0, byte1])
-                },
-                None => {
-                    writer.write(&[1, 1])
-                },
-            }.unwrap();
+                }
+                None => writer.write(&[1, 1]),
+            }
+            .unwrap();
         }
 
         for desc_idx in 0..4 {
             let desc = self.descriptors.get(desc_idx);
             match desc {
-                Some(desc_type) => {
-                    writer.write(&desc_type.serialize())
-                },
-                None => writer.write(&[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-            }.unwrap();
+                Some(desc_type) => writer.write(&desc_type.serialize()),
+                None => writer.write(&[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
+            }
+            .unwrap();
         }
 
         // FIXME: Support the extensions

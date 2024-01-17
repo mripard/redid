@@ -2,7 +2,7 @@ use num_traits::{Euclid, FromPrimitive, Num};
 
 pub(crate) fn round_up<T>(number: T, multiple: T) -> T
 where
-    T: Num + Euclid + FromPrimitive
+    T: Num + Euclid + FromPrimitive,
 {
     let rem = number.rem_euclid(&multiple);
 
@@ -14,36 +14,30 @@ where
     div * multiple
 }
 
-#[derive(Clone)]
-#[derive(Copy)]
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum EDIDDetailedTimingAnalogSync {
     BipolarComposite(bool, bool),
     Composite(bool, bool),
 }
 
 impl Default for EDIDDetailedTimingAnalogSync {
-        fn default() -> Self {
-            EDIDDetailedTimingAnalogSync::Composite(false, false)
-        }
+    fn default() -> Self {
+        EDIDDetailedTimingAnalogSync::Composite(false, false)
+    }
 }
 
-#[derive(Clone)]
-#[derive(Copy)]
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum EDIDDetailedTimingDigitalSync {
     Separate(bool, bool),
 }
 
 impl Default for EDIDDetailedTimingDigitalSync {
-        fn default() -> Self {
-            EDIDDetailedTimingDigitalSync::Separate(false, false)
-        }
+    fn default() -> Self {
+        EDIDDetailedTimingDigitalSync::Separate(false, false)
+    }
 }
 
-#[derive(Clone)]
-#[derive(Copy)]
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum EDIDDetailedTimingSync {
     Analog(EDIDDetailedTimingAnalogSync),
     Digital(EDIDDetailedTimingDigitalSync),
@@ -55,9 +49,7 @@ impl Default for EDIDDetailedTimingSync {
     }
 }
 
-#[derive(Clone)]
-#[derive(Copy)]
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum EDIDDetailedTimingStereo {
     None,
     FieldSequentialRightOnSync,
@@ -74,10 +66,7 @@ impl Default for EDIDDetailedTimingStereo {
     }
 }
 
-#[derive(Clone)]
-#[derive(Copy)]
-#[derive(Debug)]
-#[derive(Default)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct EDIDDetailedTiming {
     interlace: bool,
     pixel_clock: u32,
@@ -103,25 +92,25 @@ impl EDIDDetailedTiming {
         EDIDDetailedTiming::default()
     }
 
-    pub fn set_blanking(mut self, h:u16, v: u16) -> Self {
+    pub fn set_blanking(mut self, h: u16, v: u16) -> Self {
         self.hblank = h;
         self.vblank = v;
         self
     }
 
-    pub fn set_display(mut self, h:u16, v: u16) -> Self {
+    pub fn set_display(mut self, h: u16, v: u16) -> Self {
         self.hdisplay = h;
         self.vdisplay = v;
         self
     }
 
-    pub fn set_front_porch(mut self, h:u16, v: u16) -> Self {
+    pub fn set_front_porch(mut self, h: u16, v: u16) -> Self {
         self.hfp = h;
         self.vfp = v;
         self
     }
 
-    pub fn set_sync_pulse(mut self, h:u16, v: u16) -> Self {
+    pub fn set_sync_pulse(mut self, h: u16, v: u16) -> Self {
         self.hsync = h;
         self.vsync = v;
         self
@@ -154,17 +143,13 @@ impl EDIDDetailedTiming {
     }
 }
 
-#[derive(Clone)]
-#[derive(Copy)]
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum EDIDDisplayRangeLimitsCVTVersion {
     V1R1,
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Clone)]
-#[derive(Copy)]
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum EDIDDisplayRangeLimitsCVTRatio {
     Ratio_15_9,
     Ratio_16_9,
@@ -173,8 +158,7 @@ pub enum EDIDDisplayRangeLimitsCVTRatio {
     Ratio_5_4,
 }
 
-#[derive(Clone)]
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct EDIDDisplayRangeLimitsCVT {
     version: EDIDDisplayRangeLimitsCVTVersion,
     additional_precision: u16,
@@ -264,8 +248,7 @@ impl EDIDDisplayRangeLimitsCVT {
     }
 }
 
-#[derive(Clone)]
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum EDIDDisplayRangeLimitsSubtype {
     DefaultGTF,
     RangeLimitsOnly,
@@ -278,9 +261,7 @@ impl Default for EDIDDisplayRangeLimitsSubtype {
     }
 }
 
-#[derive(Clone)]
-#[derive(Debug)]
-#[derive(Default)]
+#[derive(Clone, Debug, Default)]
 pub struct EDIDDisplayRangeLimits {
     min_hfreq: u16,
     max_hfreq: u16,
@@ -320,9 +301,7 @@ impl EDIDDisplayRangeLimits {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Copy)]
-#[derive(Clone)]
-#[derive(Debug)]
+#[derive(Copy, Clone, Debug)]
 pub enum EDIDDescriptorEstablishedTimingsIII {
     ET_1152_864_75Hz = 0,
     ET_1024_768_85Hz,
@@ -371,17 +350,14 @@ pub enum EDIDDescriptorEstablishedTimingsIII {
     ET_1920_1200_75Hz,
 }
 
-#[derive(Clone)]
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct EDIDDescriptorEstablishedTimings {
     et: Vec<EDIDDescriptorEstablishedTimingsIII>,
 }
 
 impl EDIDDescriptorEstablishedTimings {
     pub fn new() -> Self {
-        Self {
-            et: Vec::new(),
-        }
+        Self { et: Vec::new() }
     }
 
     pub fn add_timing(mut self, et: EDIDDescriptorEstablishedTimingsIII) -> Self {
@@ -390,8 +366,7 @@ impl EDIDDescriptorEstablishedTimings {
     }
 }
 
-#[derive(Clone)]
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum EDIDDescriptor {
     Custom(u8, Vec<u8>),
     Dummy,
@@ -421,7 +396,7 @@ impl EDIDDescriptor {
                         data.push(0);
                     }
                 }
-            },
+            }
             EDIDDescriptor::DetailedTiming(dt) => {
                 let freq = (dt.pixel_clock / 10) as u16;
                 let lo_freq = (freq & 0xff) as u8;
@@ -464,28 +439,26 @@ impl EDIDDescriptor {
                 }
 
                 match dt.sync_type {
-                    EDIDDetailedTimingSync::Analog(sync) => {
-                        match sync {
-                            EDIDDetailedTimingAnalogSync::BipolarComposite(serrations, sync_on_rgb) => {
-                                flags |= 1 << 3;
+                    EDIDDetailedTimingSync::Analog(sync) => match sync {
+                        EDIDDetailedTimingAnalogSync::BipolarComposite(serrations, sync_on_rgb) => {
+                            flags |= 1 << 3;
 
-                                if serrations {
-                                    flags |= 1 << 2;
-                                }
+                            if serrations {
+                                flags |= 1 << 2;
+                            }
 
-                                if sync_on_rgb {
-                                    flags |= 1 << 1;
-                                }
-                            },
-                            EDIDDetailedTimingAnalogSync::Composite(serrations, sync_on_rgb) => {
-                                if serrations {
-                                    flags |= 1 << 2;
-                                }
+                            if sync_on_rgb {
+                                flags |= 1 << 1;
+                            }
+                        }
+                        EDIDDetailedTimingAnalogSync::Composite(serrations, sync_on_rgb) => {
+                            if serrations {
+                                flags |= 1 << 2;
+                            }
 
-                                if sync_on_rgb {
-                                    flags |= 1 << 1;
-                                }
-                            },
+                            if sync_on_rgb {
+                                flags |= 1 << 1;
+                            }
                         }
                     },
                     EDIDDetailedTimingSync::Digital(sync) => {
@@ -500,22 +473,33 @@ impl EDIDDescriptor {
                                 if hpol {
                                     flags |= 1 << 1;
                                 }
-                            },
+                            }
                         };
-                    },
+                    }
                 }
 
-                data.extend_from_slice(&[lo_freq, hi_freq,
-                    lo_haddr, lo_hblank, (hi_haddr << 4) | hi_hblank,
-                    lo_vaddr, lo_vblank, (hi_vaddr << 4) | hi_vblank,
-                    lo_hfp, lo_hsync,
+                data.extend_from_slice(&[
+                    lo_freq,
+                    hi_freq,
+                    lo_haddr,
+                    lo_hblank,
+                    (hi_haddr << 4) | hi_hblank,
+                    lo_vaddr,
+                    lo_vblank,
+                    (hi_vaddr << 4) | hi_vblank,
+                    lo_hfp,
+                    lo_hsync,
                     (lo_vfp << 4) | lo_vsync,
                     (hi_hfp << 6) | (hi_hsync << 4) | (hi_vfp << 2) | hi_vsync,
-                    lo_hsize, lo_vsize, (hi_hsize << 4) | hi_vsize,
+                    lo_hsize,
+                    lo_vsize,
+                    (hi_hsize << 4) | hi_vsize,
                     // FIXME: Borders size
-                    0, 0,
-                    flags])
-            },
+                    0,
+                    0,
+                    flags,
+                ])
+            }
             EDIDDescriptor::DisplayRangeLimits(limits) => {
                 let mut flags_byte: u8 = 0;
 
@@ -559,12 +543,12 @@ impl EDIDDescriptor {
                         data.push(0);
                         data.push(0x0a);
                         data.extend_from_slice(&[0x20, 0x20, 0x20, 0x20, 0x20, 0x20]);
-                    },
+                    }
                     EDIDDisplayRangeLimitsSubtype::RangeLimitsOnly => {
                         data.push(1);
                         data.push(0x0a);
                         data.extend_from_slice(&[0x20, 0x20, 0x20, 0x20, 0x20, 0x20]);
-                    },
+                    }
                     EDIDDisplayRangeLimitsSubtype::CVTSupported(cvt) => {
                         data.push(4);
 
@@ -579,24 +563,26 @@ impl EDIDDescriptor {
 
                         let mut byte: u8 = 0;
                         for ratio in &cvt.supported_ratios {
-                            byte = byte | match ratio {
-                                EDIDDisplayRangeLimitsCVTRatio::Ratio_4_3 => 1 << 7,
-                                EDIDDisplayRangeLimitsCVTRatio::Ratio_16_9 => 1 << 6,
-                                EDIDDisplayRangeLimitsCVTRatio::Ratio_16_10 => 1 << 5,
-                                EDIDDisplayRangeLimitsCVTRatio::Ratio_5_4 => 1 << 4,
-                                EDIDDisplayRangeLimitsCVTRatio::Ratio_15_9 => 1 << 3,
-                            };
+                            byte = byte
+                                | match ratio {
+                                    EDIDDisplayRangeLimitsCVTRatio::Ratio_4_3 => 1 << 7,
+                                    EDIDDisplayRangeLimitsCVTRatio::Ratio_16_9 => 1 << 6,
+                                    EDIDDisplayRangeLimitsCVTRatio::Ratio_16_10 => 1 << 5,
+                                    EDIDDisplayRangeLimitsCVTRatio::Ratio_5_4 => 1 << 4,
+                                    EDIDDisplayRangeLimitsCVTRatio::Ratio_15_9 => 1 << 3,
+                                };
                         }
                         data.push(byte);
 
                         let mut byte = 0;
-                        byte = byte | (match cvt.preferred_ratio {
-                            EDIDDisplayRangeLimitsCVTRatio::Ratio_4_3 => 0,
-                            EDIDDisplayRangeLimitsCVTRatio::Ratio_16_9 => 1,
-                            EDIDDisplayRangeLimitsCVTRatio::Ratio_16_10 => 2,
-                            EDIDDisplayRangeLimitsCVTRatio::Ratio_5_4 => 3,
-                            EDIDDisplayRangeLimitsCVTRatio::Ratio_15_9 => 4,
-                        } << 5) ;
+                        byte = byte
+                            | (match cvt.preferred_ratio {
+                                EDIDDisplayRangeLimitsCVTRatio::Ratio_4_3 => 0,
+                                EDIDDisplayRangeLimitsCVTRatio::Ratio_16_9 => 1,
+                                EDIDDisplayRangeLimitsCVTRatio::Ratio_16_10 => 2,
+                                EDIDDisplayRangeLimitsCVTRatio::Ratio_5_4 => 3,
+                                EDIDDisplayRangeLimitsCVTRatio::Ratio_15_9 => 4,
+                            } << 5);
 
                         if cvt.reduced_blanking {
                             byte = byte | (1 << 4);
@@ -625,9 +611,9 @@ impl EDIDDescriptor {
                         }
                         data.push(byte);
                         data.push(cvt.preferred_refresh);
-                    },
+                    }
                 };
-            },
+            }
             EDIDDescriptor::DataString(string) => {
                 data.extend_from_slice(&[0, 0, 0, 0xfe, 0]);
 
@@ -635,7 +621,7 @@ impl EDIDDescriptor {
                 let mut count = 0;
                 for byte in bytes {
                     if *byte == 0xc2 {
-                        continue
+                        continue;
                     }
 
                     data.push(*byte);
@@ -644,16 +630,16 @@ impl EDIDDescriptor {
 
                 if count < 13 {
                     data.push(0x0a);
-                    count = count +  1;
+                    count = count + 1;
                 }
 
                 for _ in count..13 {
                     data.push(0x20);
                 }
-            },
+            }
             EDIDDescriptor::Dummy => {
                 data.extend_from_slice(&[0, 0, 0, 0x10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-            },
+            }
             EDIDDescriptor::ProductName(name) => {
                 data.extend_from_slice(&[0, 0, 0, 0xfc, 0]);
 
@@ -668,7 +654,7 @@ impl EDIDDescriptor {
                         data.push(0x20);
                     }
                 }
-            },
+            }
             EDIDDescriptor::ProductSerialNumber(serial) => {
                 data.extend_from_slice(&[0, 0, 0, 0xff, 0]);
 
@@ -683,7 +669,7 @@ impl EDIDDescriptor {
                         data.push(0x20);
                     }
                 }
-            },
+            }
             EDIDDescriptor::EstablishedTimings(et) => {
                 data.extend_from_slice(&[0, 0, 0, 0xf7, 0]);
                 data.push(0x0a);
