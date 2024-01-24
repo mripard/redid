@@ -4,7 +4,7 @@ BASE_DIR=$(dirname $0)
 EDID_DIR=$BASE_DIR/edid-db/edid.tv/
 
 MAX_FAILURES=10
-MAX_ID=1000
+MAX_ID=5000
 
 failures=0
 for id in $(seq 1 $MAX_ID); do
