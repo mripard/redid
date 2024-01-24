@@ -46,6 +46,4 @@ for id in $(seq 1 $MAX_ID); do
 		mv $file $file.disabled-json-fails
 		continue
 	fi
-
-	sleep 1
 done
