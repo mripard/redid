@@ -32,7 +32,7 @@ for id in $(seq 1 $MAX_ID); do
 	decode=$(cat $file | edid-decode)
 	ver=$(echo "$decode" | grep "EDID Structure Version & Revision" | cut -d ':' -f2 | sed 's/^ *//g')
 	if [ $ver != "1.4" ]; then
-		mv $file $file.disabled-1.3
+		mv $file $file.disabled-$ver
 		continue
 	fi
 
