@@ -30,6 +30,11 @@ for id in $(seq 1 $MAX_ID); do
 	failures=0
 
 	decode=$(cat $file | edid-decode)
+	if [ $? -ne 0 ]; then
+		mv $file $file.disabled-edid-decode-failed
+		continue
+	fi
+
 	ver=$(echo "$decode" | grep "EDID Structure Version & Revision" | cut -d ':' -f2 | sed 's/^ *//g')
 	if [ $ver != "1.4" ]; then
 		mv $file $file.disabled-$ver
