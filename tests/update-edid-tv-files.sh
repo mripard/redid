@@ -1,9 +1,12 @@
 #! /bin/sh
 
+BASE_DIR=$(dirname $0)
+EDID_DIR=$BASE_DIR/edid-db/edid.tv/
+
 MAX_ID=1000
 
 for id in $(seq 1 $MAX_ID); do
-	file="edid.tv-$id.bin"
+	file="$EDID_DIR/edid.tv-$id.bin"
 	if ls $file* > /dev/null 2>&1; then
 		continue
 	fi
@@ -22,7 +25,7 @@ for id in $(seq 1 $MAX_ID); do
 		continue
 	fi
 
-	json=$(../tools/edid-chamelium/edid2json.py $file)
+	json=$($BASE_DIR/tools/edid-chamelium/edid2json.py $file)
 	if [ $? -ne 0 ]; then
 		mv $file $file.disabled-json-fails
 		continue
