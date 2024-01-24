@@ -3,20 +3,31 @@
 BASE_DIR=$(dirname $0)
 EDID_DIR=$BASE_DIR/edid-db/edid.tv/
 
+MAX_FAILURES=10
 MAX_ID=1000
 
+failures=0
 for id in $(seq 1 $MAX_ID); do
 	file="$EDID_DIR/edid.tv-$id.bin"
 	if ls $file* > /dev/null 2>&1; then
+		failures=0
 		continue
 	fi
 
 	echo "$id not found, downloading..."
 	curl -sfL "http://edid.tv/edid/$id/download/" -o $file
 	if [ $? -ne 0 ]; then
-		echo "Couldn't download id $id, stopping."
-		exit $?
+		failures=$((failures + 1))
+		if ((failures >= MAX_FAILURES)); then
+			echo "Failed to fetch last $MAX_FAILURES IDs. Stopping."
+			exit $?
+		fi
+
+		echo "Couldn't download id $id, skipping."
+		continue
 	fi
+
+	failures=0
 
 	decode=$(cat $file | edid-decode)
 	ver=$(echo "$decode" | grep "EDID Structure Version & Revision" | cut -d ':' -f2 | sed 's/^ *//g')
