@@ -6,6 +6,8 @@ description = "VESA EDID Generation Library"
 edition = "2021"
 readme = "README.md"
 license-file = "LICENSE"
+keywords = ["edid", "display", "graphics"]
+categories = ["encoding", "graphics", "hardware-support"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
