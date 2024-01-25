@@ -2,6 +2,7 @@
 name = "edid"
 version = "0.1.0"
 authors = ["Maxime Ripard <mripard@kernel.org>"]
+description = "VESA EDID Generation Library"
 edition = "2021"
 license-file = "LICENSE"
 
