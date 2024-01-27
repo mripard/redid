@@ -1123,7 +1123,7 @@ class DetailedTimingDescriptor(Descriptor):
       A string indicating the stereo mode.
     """
     # Bits 6-5 | Stereo mode
-    stereo_bits = (self._block[17] & 0x60) >> 4 + (self._block[17] & 0x01)
+    stereo_bits = ((self._block[17] & 0x60) >> 4) + (self._block[17] & 0x01)
     stereo_map = [
         'No stereo',
         'No stereo',
