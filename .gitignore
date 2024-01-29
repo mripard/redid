@@ -1,3 +1,4 @@
+/Cargo.lock
 /target
 /tests/edid-db/*
 !/tests/edid-db/*.sh
