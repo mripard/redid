@@ -4,7 +4,7 @@ use num_traits::ToPrimitive;
 use serde_json::Value;
 use test_generator::test_resources;
 
-use edid::{
+use redid::{
     EdidAnalogSignalLevelStandard, EdidAnalogVideoInputDefinition, EdidAnalogVideoSetup,
     EdidChromaticityPoint, EdidChromaticityPoints, EdidDescriptorCustom,
     EdidDescriptorDetailedTiming, EdidDescriptorString, EdidDetailedTimingAnalogSync,
