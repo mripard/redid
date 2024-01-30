@@ -35,12 +35,12 @@ This crate is aimed at providing a typesafe abstraction to generate EDIDs.
   - [x] ASCII Only
   - [x] Upper Case Only
 
-- [ ] Product Code
-  - [ ] Mandatory
-  - [ ] 2 bytes
+- [x] Product Code
+  - [x] Mandatory
+  - [x] 2 bytes
 
-- [ ] Serial Number
-  - [ ] 4 bytes
+- [x] Serial Number
+  - [x] 4 bytes
 
 - [ ] Date
   - [ ] Mandatory
