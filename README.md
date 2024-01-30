@@ -76,16 +76,17 @@ This crate is aimed at providing a typesafe abstraction to generate EDIDs.
         - [x] Required
 
 - [ ] Display XY Chromaticity Coordinates
-  - [ ] Mandatory
+  - [x] Mandatory
+  - [ ] Needs to be consistent with the Display Color Type in the display parameters
 
 - [x] Established Timings
   - [x] Required if Plug & Play (by assuming the device is Plug & Play)
   - [x] 640x480@60Hz is required if Plug & Play (by assuming the device is Plug & Play)
 
-- [ ] Standard Timings
-  - [ ] Horizontal Addressable Pixels is between 256 and 2288, in increment of 8 pixels
-  - [ ] Field Refresh Rate is between 60 and 123Hz
-  - [ ] Unused Timings mut be set to 0x01, 0x01
+- [x] Standard Timings
+  - [x] Horizontal Addressable Pixels is between 256 and 2288, in increment of 8 pixels
+  - [x] Field Refresh Rate is between 60 and 123Hz
+  - [x] Unused Timings mut be set to 0x01, 0x01
 
 - [ ] Descriptors
   - [ ] Detailed Descriptors must be first and is preferred mode

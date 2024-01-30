@@ -25,6 +25,7 @@ pub use descriptors::{
 
 const EDID_BASE_LEN: usize = 128;
 const EDID_MANUFACTURER_LEN: usize = 3;
+const EDID_STD_TIMINGS_LEN: usize = 16;
 const EDID_DESCRIPTOR_LEN: usize = 18;
 const EDID_DESCRIPTORS_NUM: usize = 4;
 const EDID_DESCRIPTOR_PAYLOAD_LEN: usize = 13;
@@ -1314,7 +1315,7 @@ pub struct EdidStandardTiming {
 
 impl IntoBytes for Vec<EdidStandardTiming> {
     fn into_bytes(self) -> Vec<u8> {
-        let mut bytes = Vec::with_capacity(16);
+        let mut bytes = Vec::with_capacity(EDID_STD_TIMINGS_LEN);
 
         for st_idx in 0..8 {
             let st = self.get(st_idx);
@@ -1334,11 +1335,39 @@ impl IntoBytes for Vec<EdidStandardTiming> {
 
                     bytes.extend_from_slice(&[byte0, byte1]);
                 }
-                None => bytes.extend_from_slice(&[1, 1]),
+                None => bytes.extend_from_slice(&[0x01, 0x01]),
             };
         }
 
+        let len = bytes.len();
+        assert_eq!(
+            len, EDID_STD_TIMINGS_LEN,
+            "Standard timings array is larger than it should ({} vs expected {} bytes",
+            len, EDID_STD_TIMINGS_LEN
+        );
+
         bytes
+    }
+}
+
+#[cfg(test)]
+mod test_edid_standard_timings {
+    use crate::{EdidStandardTiming, EdidStandardTimingRatio, IntoBytes};
+
+    #[test]
+    fn test_binary_spec() {
+        let timings = vec![EdidStandardTiming {
+            x: 1920.try_into().unwrap(),
+            ratio: EdidStandardTimingRatio::Ratio_16_9,
+            frequency: 60.try_into().unwrap(),
+        }];
+        assert_eq!(
+            timings.into_bytes(),
+            &[
+                0xd1, 0xc0, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+                0x01, 0x01,
+            ]
+        );
     }
 }
 
