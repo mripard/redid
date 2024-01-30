@@ -229,6 +229,17 @@ mod test_descriptor_detailed_timing_pixel_clock {
         let clk = EdidDetailedTimingPixelClock::try_from(135_000).unwrap();
         assert_eq!(clk.into_raw().to_le_bytes(), [0xbc, 0x34]);
     }
+
+    #[test]
+    fn test_range() {
+        assert!(EdidDetailedTimingPixelClock::try_from(0).is_err());
+        assert!(EdidDetailedTimingPixelClock::try_from(1).is_err());
+        assert!(EdidDetailedTimingPixelClock::try_from(10).is_ok());
+        assert!(EdidDetailedTimingPixelClock::try_from(655_350).is_ok());
+        assert!(EdidDetailedTimingPixelClock::try_from(655_351).is_err());
+        assert!(EdidDetailedTimingPixelClock::try_from(u32::MAX).is_err());
+
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -312,6 +323,19 @@ impl TryFrom<u8> for EdidDescriptor6BitsTiming {
     }
 }
 
+#[cfg(test)]
+mod test_edid_detailed_timings_6bits_fields {
+    use crate::descriptors::EdidDescriptor6BitsTiming;
+
+    #[test]
+    fn test_range() {
+        assert!(EdidDescriptor6BitsTiming::try_from(0).is_ok());
+        assert!(EdidDescriptor6BitsTiming::try_from(63).is_ok());
+        assert!(EdidDescriptor6BitsTiming::try_from(64).is_err());
+        assert!(EdidDescriptor6BitsTiming::try_from(u8::MAX).is_err());
+    }
+}
+
 pub type EdidDescriptor8BitsTiming = EdidDescriptorTiming<8, u8>;
 
 impl TryFrom<u8> for EdidDescriptor8BitsTiming {
@@ -319,6 +343,17 @@ impl TryFrom<u8> for EdidDescriptor8BitsTiming {
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         EdidDescriptorTiming::try_from(value)
+    }
+}
+
+#[cfg(test)]
+mod test_edid_detailed_timings_8bits_fields {
+    use crate::descriptors::EdidDescriptor8BitsTiming;
+
+    #[test]
+    fn test_range() {
+        assert!(EdidDescriptor8BitsTiming::try_from(0).is_ok());
+        assert!(EdidDescriptor8BitsTiming::try_from(255).is_ok());
     }
 }
 
@@ -332,6 +367,19 @@ impl TryFrom<u16> for EdidDescriptor10BitsTiming {
     }
 }
 
+#[cfg(test)]
+mod test_edid_detailed_timings_10bits_fields {
+    use crate::descriptors::EdidDescriptor10BitsTiming;
+
+    #[test]
+    fn test_range() {
+        assert!(EdidDescriptor10BitsTiming::try_from(0).is_ok());
+        assert!(EdidDescriptor10BitsTiming::try_from(1013).is_ok());
+        assert!(EdidDescriptor10BitsTiming::try_from(1024).is_err());
+        assert!(EdidDescriptor10BitsTiming::try_from(u16::MAX).is_err());
+    }
+}
+
 pub type EdidDescriptor12BitsTiming = EdidDescriptorTiming<12, u16>;
 
 impl TryFrom<u16> for EdidDescriptor12BitsTiming {
@@ -342,7 +390,33 @@ impl TryFrom<u16> for EdidDescriptor12BitsTiming {
     }
 }
 
+#[cfg(test)]
+mod test_edid_detailed_timings_12bits_fields {
+    use crate::descriptors::EdidDescriptor12BitsTiming;
+
+    #[test]
+    fn test_range() {
+        assert!(EdidDescriptor12BitsTiming::try_from(0).is_ok());
+        assert!(EdidDescriptor12BitsTiming::try_from(4095).is_ok());
+        assert!(EdidDescriptor12BitsTiming::try_from(4096).is_err());
+        assert!(EdidDescriptor12BitsTiming::try_from(u16::MAX).is_err());
+    }
+}
+
 pub type EdidDetailedTimingSizeMm = EdidDescriptor12BitsTiming;
+
+#[cfg(test)]
+mod test_edid_detailed_timings_size {
+    use crate::descriptors::EdidDetailedTimingSizeMm;
+
+    #[test]
+    fn test_range() {
+        assert!(EdidDetailedTimingSizeMm::try_from(0).is_ok());
+        assert!(EdidDetailedTimingSizeMm::try_from(4095).is_ok());
+        assert!(EdidDetailedTimingSizeMm::try_from(4096).is_err());
+        assert!(EdidDetailedTimingSizeMm::try_from(u16::MAX).is_err());
+    }
+}
 
 #[derive(Clone, Copy, Debug, TypedBuilder)]
 pub struct EdidDescriptorDetailedTiming {

@@ -99,13 +99,13 @@ This crate is aimed at providing a typesafe abstraction to generate EDIDs.
     - [ ] Display Size is set (in the base block), but Image size isn't
     - [ ] Display Size is smaller than the image size
     - [ ] Image Size is set but the Display Size isn't
-    - [ ] Frequency is between 10 and 655,350kHz
-    - [ ] Horizontal Addressable, Blanking and Vertical Addressable are between 0 and 4095 pixels
-    - [ ] HFP and Hsync are between 0 and 1023 pixels
-    - [ ] VFP, Vsync are between 0 and 63  lines
-    - [ ] Hsync / vsync are between 0 and 4095 mm
-    - [ ] Right / Left and Top / Bottom Borders are between 0 and 255 pixels / lines
-    - [ ] Can be set to 0 if undefined
+    - [x] Frequency is between 10 and 655,350kHz
+    - [x] Horizontal Addressable, Blanking, Vertical Addressable and Blanking are between 0 and 4095 pixels
+    - [x] HFP and Hsync are between 0 and 1023 pixels
+    - [x] VFP, Vsync are between 0 and 63  lines
+    - [x] Hsync / vsync are between 0 and 4095 mm
+    - [x] Right / Left and Top / Bottom Borders are between 0 and 255 pixels / lines
+    - [x] Can be set to 0 if undefined
   - [ ] Display Range Limits
     - [ ] GTF
       - [ ] Minimum Horizontal Rate is higher that Maximum Horizontal Rate
