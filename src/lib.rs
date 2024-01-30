@@ -1480,7 +1480,7 @@ pub struct EdidRelease3 {
     display_parameters_features: EdidR3BasicDisplayParametersFeatures,
     filter_chromaticity: EdidFilterChromaticity,
 
-    #[builder(via_mutators)]
+    #[builder(via_mutators, default = vec![EdidEstablishedTiming::ET_640_480_60hz])]
     established_timings: Vec<EdidEstablishedTiming>,
 
     #[builder(via_mutators)]

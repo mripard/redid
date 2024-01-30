@@ -78,9 +78,9 @@ This crate is aimed at providing a typesafe abstraction to generate EDIDs.
 - [ ] Display XY Chromaticity Coordinates
   - [ ] Mandatory
 
-- [ ] Established Timings
-  - [ ] Required if Plug & Play
-  - [ ] 640x480@60Hz is required if Plug & Play
+- [x] Established Timings
+  - [x] Required if Plug & Play (by assuming the device is Plug & Play)
+  - [x] 640x480@60Hz is required if Plug & Play (by assuming the device is Plug & Play)
 
 - [ ] Standard Timings
   - [ ] Horizontal Addressable Pixels is between 256 and 2288, in increment of 8 pixels
