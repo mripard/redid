@@ -56,9 +56,9 @@ This crate is aimed at providing a typesafe abstraction to generate EDIDs.
     - [ ] Mandatory
       - [ ] Analog
         - [ ] Serrations on the vsync pulse are required when composite sync or sync on green
-  - [ ] Display Size
-    - [ ] Mandatory
-    - [ ] 0x00, 0x00 is allowed for undefined size
+  - [x] Display Size
+    - [x] Mandatory
+    - [x] 0x00, 0x00 is allowed for undefined size
   - [ ] Gamma
     - [ ] Mandatory
   - [ ] Feature Support

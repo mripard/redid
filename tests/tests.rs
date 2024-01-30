@@ -154,8 +154,20 @@ fn decode_video_input_release_3(basic_display: &Value) -> EdidR3VideoInputDefini
 
 fn decode_size_release_3(basic_display: &Value) -> EdidR3ImageSize {
     if let Some(val) = basic_display["Maximum dimensions (cm)"].as_object() {
-        let x_val = val["x"].as_u64().expect("Couldn't decode X screen size") as u8;
-        let y_val = val["y"].as_u64().expect("Couldn't decode Y screen size") as u8;
+        let x_val = val["x"]
+            .as_u64()
+            .expect("Couldn't decode X screen size")
+            .to_u8()
+            .unwrap()
+            .try_into()
+            .unwrap();
+        let y_val = val["y"]
+            .as_u64()
+            .expect("Couldn't decode Y screen size")
+            .to_u8()
+            .unwrap()
+            .try_into()
+            .unwrap();
 
         return EdidR3ImageSize::Size(
             EdidScreenSize::builder()
@@ -347,8 +359,20 @@ fn decode_size_release_4(basic_display: &Value) -> EdidR4ImageSize {
     };
 
     if let Some(val) = basic_display["Maximum dimensions (cm)"].as_object() {
-        let x_val = val["x"].as_u64().expect("Couldn't decode X screen size") as u8;
-        let y_val = val["y"].as_u64().expect("Couldn't decode Y screen size") as u8;
+        let x_val = val["x"]
+            .as_u64()
+            .expect("Couldn't decode X screen size")
+            .to_u8()
+            .unwrap()
+            .try_into()
+            .unwrap();
+        let y_val = val["y"]
+            .as_u64()
+            .expect("Couldn't decode Y screen size")
+            .to_u8()
+            .unwrap()
+            .try_into()
+            .unwrap();
 
         return EdidR4ImageSize::Size(
             EdidScreenSize::builder()

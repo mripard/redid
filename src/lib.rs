@@ -581,13 +581,25 @@ impl IntoBytes for EdidR3VideoInputDefinition {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
+pub struct EdidScreenSizeLength(u8);
+
+impl TryFrom<u8> for EdidScreenSizeLength {
+    type Error = EdidTypeConversionError<u8>;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        if !(1..=255).contains(&value) {
+            return Err(EdidTypeConversionError::Range(value, Some(1), Some(255)));
+        }
+
+        Ok(Self(value))
+    }
+}
+
 #[derive(Clone, Copy, Debug, TypedBuilder)]
 pub struct EdidScreenSize {
-    // FIXME: 0 is an invalid value
-    horizontal_cm: u8,
-
-    // FIXME: 0 is an invalid value
-    vertical_cm: u8,
+    horizontal_cm: EdidScreenSizeLength,
+    vertical_cm: EdidScreenSizeLength,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -599,7 +611,7 @@ pub enum EdidR3ImageSize {
 impl IntoBytes for EdidR3ImageSize {
     fn into_bytes(self) -> Vec<u8> {
         let bytes = match self {
-            Self::Size(s) => [s.horizontal_cm, s.vertical_cm],
+            Self::Size(s) => [s.horizontal_cm.0, s.vertical_cm.0],
             Self::Undefined => [0x00, 0x00],
         };
 
@@ -876,7 +888,7 @@ impl IntoBytes for EdidR4ImageSize {
 
                 [0x00, stored]
             }
-            Self::Size(s) => [s.horizontal_cm, s.vertical_cm],
+            Self::Size(s) => [s.horizontal_cm.0, s.vertical_cm.0],
             Self::Undefined => [0x00, 0x00],
         };
 
