@@ -29,11 +29,11 @@ This crate is aimed at providing a typesafe abstraction to generate EDIDs.
 
 ### Type Safety
 
-- [ ] Manufacturer Name
+- [x] Manufacturer Name
   - [x] Mandatory
   - [x] 3 Characters
   - [x] ASCII Only
-  - [ ] Upper Case Only
+  - [x] Upper Case Only
 
 - [ ] Product Code
   - [ ] Mandatory

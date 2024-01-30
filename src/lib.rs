@@ -104,6 +104,12 @@ impl TryFrom<&str> for EdidManufacturer {
             )));
         }
 
+        if !value.chars().all(char::is_uppercase) {
+            return Err(EdidTypeConversionError::Value(String::from(
+                "Manufacturer ID must be upper cased.",
+            )));
+        }
+
         if value.len() != EDID_MANUFACTURER_LEN {
             return Err(EdidTypeConversionError::Value(String::from(
                 "Manufacturer ID must be 3 characters long.",
