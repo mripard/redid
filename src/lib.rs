@@ -188,11 +188,24 @@ impl TryFrom<u8> for EdidWeek {
     type Error = EdidTypeConversionError<u8>;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
-        if !(1..=54).contains(&value) {
-            return Err(EdidTypeConversionError::Range(value, Some(1), Some(54)));
+        if !(1..=53).contains(&value) {
+            return Err(EdidTypeConversionError::Range(value, Some(1), Some(53)));
         }
 
         Ok(Self(value))
+    }
+}
+
+#[cfg(test)]
+mod test_edid_week {
+    use crate::EdidWeek;
+
+    #[test]
+    fn test_range() {
+        assert!(EdidWeek::try_from(0).is_err());
+        assert!(EdidWeek::try_from(1).is_ok());
+        assert!(EdidWeek::try_from(53).is_ok());
+        assert!(EdidWeek::try_from(54).is_err());
     }
 }
 
@@ -211,22 +224,21 @@ impl TryFrom<u16> for EdidYear {
     }
 }
 
-/// EDID Manufacture Date Representation.
+#[cfg(test)]
+mod test_edid_year {
+    use crate::EdidYear;
+
+    #[test]
+    fn test_range() {
+        assert!(EdidYear::try_from(1989).is_err());
+        assert!(EdidYear::try_from(1990).is_ok());
+        assert!(EdidYear::try_from(2024).is_ok());
+    }
+}
+
+/// EDID 1.3 Manufacture Date Representation.
 ///
-/// Contains a year, starting from 1990, and an optional week in the 1-54 range.
-///
-/// # Examples
-///
-/// It is taken from the EDID 1.4 Specification, Section 3.4.4, Example 1.
-///
-/// ```
-/// use edid::{EdidManufactureDate, IntoBytes};
-/// use std::convert::TryInto;
-///
-/// let date: EdidManufactureDate = (1, 2006).try_into().unwrap();
-///
-/// assert_eq!(date.into_bytes(), &[0x01, 0x10]);
-/// ```
+/// Contains a year, starting from 1990, and an optional week in the 1-53 range.
 #[derive(Clone, Copy, Debug)]
 pub struct EdidManufactureDate(Option<EdidWeek>, EdidYear);
 
@@ -268,22 +280,107 @@ impl IntoBytes for EdidManufactureDate {
     }
 }
 
+#[cfg(test)]
+mod test_edid_manufacture_date {
+    use crate::{EdidManufactureDate, IntoBytes};
+
+    #[test]
+    fn test_binary_spec() {
+        // These are taken from the EDID 1.3 Specification, Section 3.4
+
+        let date = EdidManufactureDate::try_from(1997).unwrap();
+        assert_eq!(date.into_bytes(), &[0x00, 0x07]);
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct EdidR4Week(u8);
+
+impl TryFrom<u8> for EdidR4Week {
+    type Error = EdidTypeConversionError<u8>;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        if !(1..=54).contains(&value) {
+            return Err(EdidTypeConversionError::Range(value, Some(1), Some(54)));
+        }
+
+        Ok(Self(value))
+    }
+}
+
+#[cfg(test)]
+mod test_edid_week_release_4 {
+    use crate::EdidR4Week;
+
+    #[test]
+    fn test_range() {
+        assert!(EdidR4Week::try_from(0).is_err());
+        assert!(EdidR4Week::try_from(1).is_ok());
+        assert!(EdidR4Week::try_from(54).is_ok());
+        assert!(EdidR4Week::try_from(55).is_err());
+    }
+}
+
+/// EDID 1.4 Manufacture Date Representation.
+///
+/// Contains a year, starting from 1990, and an optional week in the 1-54 range.
+#[derive(Clone, Copy, Debug)]
+pub struct EdidR4ManufactureDate(Option<EdidR4Week>, EdidYear);
+
+impl TryFrom<(u8, u16)> for EdidR4ManufactureDate {
+    type Error = EdidTypeConversionError<u16>;
+
+    fn try_from(value: (u8, u16)) -> Result<Self, Self::Error> {
+        let week = value
+            .0
+            .try_into()
+            .map_err(|e: EdidTypeConversionError<u8>| match e {
+                EdidTypeConversionError::Int(e) => EdidTypeConversionError::Int(e),
+                EdidTypeConversionError::Range(v, min, max) => {
+                    EdidTypeConversionError::Range(v.into(), min.map(u16::from), max.map(u16::from))
+                }
+                EdidTypeConversionError::Slice(e) => EdidTypeConversionError::Slice(e),
+                EdidTypeConversionError::Value(v) => EdidTypeConversionError::Value(v),
+            })?;
+        let year = value.1.try_into()?;
+
+        Ok(Self(Some(week), year))
+    }
+}
+
+impl TryFrom<u16> for EdidR4ManufactureDate {
+    type Error = EdidTypeConversionError<u16>;
+
+    fn try_from(value: u16) -> Result<Self, Self::Error> {
+        Ok(Self(None, value.try_into()?))
+    }
+}
+
+impl IntoBytes for EdidR4ManufactureDate {
+    fn into_bytes(self) -> Vec<u8> {
+        let week = if let Some(val) = self.0 { val.0 } else { 0 };
+        let year = u8::try_from(self.1 .0 - 1990).expect("Year would overflow our type.");
+
+        Vec::from(&[week, year])
+    }
+}
+
+#[cfg(test)]
+mod test_edid_manufacture_date_release_4 {
+    use crate::{EdidManufactureDate, IntoBytes};
+
+    #[test]
+    fn test_binary_spec() {
+        // This is taken from the EDID 1.4 Specification, Section 3.4.4, Example 1.
+
+        let date = EdidManufactureDate::try_from((1, 2006)).unwrap();
+        assert_eq!(date.into_bytes(), &[0x01, 0x10]);
+    }
+}
+
 /// EDID 1.4 Model Date Representation.
 ///
 /// Contains a Year, starting from 1990.
-///
-/// # Examples
-///
-/// It is taken from the EDID 1.4 Specification, Section 3.4.4, Example 2.
-///
-/// ```
-/// use edid::{EdidR4ModelDate, IntoBytes};
-/// use std::convert::TryInto;
-///
-/// let date: EdidR4ModelDate = 2006.try_into().unwrap();
-///
-/// assert_eq!(date.into_bytes(), &[0xff, 0x10]);
-/// ```
 #[derive(Clone, Copy, Debug)]
 pub struct EdidR4ModelDate(EdidYear);
 
@@ -303,29 +400,23 @@ impl IntoBytes for EdidR4ModelDate {
     }
 }
 
+#[cfg(test)]
+mod test_edid_model_date {
+    use crate::{EdidR4ModelDate, IntoBytes};
+
+    #[test]
+    fn test_binary_spec() {
+        // This is taken from the EDID 1.4 Specification, Section 3.4.4, Example 2.
+
+        let date: EdidR4ModelDate = 2006.try_into().unwrap();
+        assert_eq!(date.into_bytes(), &[0xff, 0x10]);
+    }
+}
+
 /// EDID 1.4 Date Representation.
-///
-/// # Examples
-///
-/// They are taken from the EDID 1.4 Specification, Section 3.4.4.
-///
-/// ```
-/// use edid::{EdidManufactureDate, EdidR4Date, EdidR4ModelDate, IntoBytes};
-/// use std::convert::TryInto;
-///
-/// let manufacture_date: EdidManufactureDate = (1, 2006).try_into().unwrap();
-/// let manufacture = EdidR4Date::Manufacture(manufacture_date);
-///
-/// assert_eq!(manufacture.into_bytes(), &[0x01, 0x10]);
-///
-/// let model_date: EdidR4ModelDate = 2006.try_into().unwrap();
-/// let model = EdidR4Date::Model(model_date);
-///
-/// assert_eq!(model.into_bytes(), &[0xff, 0x10]);
-/// ```
 #[derive(Clone, Copy, Debug)]
 pub enum EdidR4Date {
-    Manufacture(EdidManufactureDate),
+    Manufacture(EdidR4ManufactureDate),
     Model(EdidR4ModelDate),
 }
 
@@ -338,34 +429,23 @@ impl IntoBytes for EdidR4Date {
     }
 }
 
+#[cfg(test)]
+mod test_edid_date_release_4 {
+    use crate::{EdidR4Date, EdidR4ManufactureDate, EdidR4ModelDate, IntoBytes};
+
+    #[test]
+    fn test_binary_spec() {
+        // These are taken from the EDID 1.4 Specification, Section 3.4.4
+
+        let date = EdidR4Date::Manufacture(EdidR4ManufactureDate::try_from((1, 2006)).unwrap());
+        assert_eq!(date.into_bytes(), &[0x01, 0x10]);
+
+        let date = EdidR4Date::Model(EdidR4ModelDate::try_from(2006).unwrap());
+        assert_eq!(date.into_bytes(), &[0xff, 0x10]);
+    }
+}
+
 /// EDID Date Representation.
-///
-/// # Examples
-///
-/// They are taken from the EDID 1.3 Specification, Section 3.4, and EDID 1.4 Specification, Section
-/// 3.4.4.
-///
-/// ```
-/// use edid::{EdidDate, EdidManufactureDate, EdidR4Date, EdidR4ModelDate, IntoBytes};
-/// use std::convert::TryInto;
-///
-/// let manufacture_date: EdidManufactureDate = 1997.try_into().unwrap();
-/// let date = EdidDate::R3(manufacture_date);
-///
-/// assert_eq!(date.into_bytes(), &[0x00, 0x07]);
-///
-/// let manufacture_date: EdidManufactureDate = (1, 2006).try_into().unwrap();
-/// let manufacture = EdidR4Date::Manufacture(manufacture_date);
-/// let date = EdidDate::R4(manufacture);
-///
-/// assert_eq!(date.into_bytes(), &[0x01, 0x10]);
-///
-/// let model_date: EdidR4ModelDate = 2006.try_into().unwrap();
-/// let model = EdidR4Date::Model(model_date);
-/// let date = EdidDate::R4(model);
-///
-/// assert_eq!(date.into_bytes(), &[0xff, 0x10]);
-/// ```
 #[derive(Clone, Copy, Debug)]
 pub enum EdidDate {
     R3(EdidManufactureDate),
@@ -378,6 +458,31 @@ impl IntoBytes for EdidDate {
             EdidDate::R3(v) => v.into_bytes(),
             EdidDate::R4(v) => v.into_bytes(),
         }
+    }
+}
+
+#[cfg(test)]
+mod test_edid_date {
+    use crate::{
+        EdidDate, EdidManufactureDate, EdidR4Date, EdidR4ManufactureDate, EdidR4ModelDate,
+        IntoBytes,
+    };
+
+    #[test]
+    fn test_binary_spec() {
+        // These are taken from the EDID 1.3 Specification, Section 3.4, and EDID 1.4 Specification,
+        // Section 3.4.4.
+
+        let date = EdidDate::R3(EdidManufactureDate::try_from(1997).unwrap());
+        assert_eq!(date.into_bytes(), &[0x00, 0x07]);
+
+        let date = EdidDate::R4(EdidR4Date::Manufacture(
+            EdidR4ManufactureDate::try_from((1, 2006)).unwrap(),
+        ));
+        assert_eq!(date.into_bytes(), &[0x01, 0x10]);
+
+        let date = EdidDate::R4(EdidR4Date::Model(EdidR4ModelDate::try_from(2006).unwrap()));
+        assert_eq!(date.into_bytes(), &[0xff, 0x10]);
     }
 }
 

@@ -42,13 +42,13 @@ This crate is aimed at providing a typesafe abstraction to generate EDIDs.
 - [x] Serial Number
   - [x] 4 bytes
 
-- [ ] Date
-  - [ ] Mandatory
-  - [ ] Year is higher than or equal to 1990
-  - [ ] EDID 1.3
-    - [ ] Week is between 1 and 53
-  - [ ] EDID 1.4
-    - [ ] Week is between 1 and 54
+- [x] Date
+  - [x] Mandatory
+  - [x] Year is higher than or equal to 1990
+  - [x] EDID 1.3
+    - [x] Week is between 1 and 53
+  - [x] EDID 1.4
+    - [x] Week is between 1 and 54
 
 - [ ] Basic Display Parameters and Features
   - [ ] Mandatory

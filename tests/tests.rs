@@ -24,9 +24,10 @@ use redid::{
     EdidR4DisplayRangeLimits, EdidR4DisplayRangeVerticalFreq,
     EdidR4DisplayRangeVideoTimingsAspectRatio, EdidR4DisplayRangeVideoTimingsCVT,
     EdidR4DisplayRangeVideoTimingsCVTR1, EdidR4DisplayRangeVideoTimingsSupport,
-    EdidR4FeatureSupport, EdidR4ImageSize, EdidR4VideoInputDefinition, EdidRelease3, EdidRelease4,
-    EdidScreenSize, EdidSerialNumber, EdidStandardTiming, EdidStandardTimingHorizontalSize,
-    EdidStandardTimingRatio, EdidStandardTimingRefreshRate, IntoBytes,
+    EdidR4FeatureSupport, EdidR4ImageSize, EdidR4ManufactureDate, EdidR4VideoInputDefinition,
+    EdidRelease3, EdidRelease4, EdidScreenSize, EdidSerialNumber, EdidStandardTiming,
+    EdidStandardTimingHorizontalSize, EdidStandardTimingRatio, EdidStandardTimingRefreshRate,
+    IntoBytes,
 };
 use uom::si::{f32::Frequency, frequency::kilohertz};
 
@@ -68,7 +69,7 @@ fn decode_date_release_4(manufacturer_info: &Value) -> EdidR4Date {
     } else {
         let year = manufacturer_info["Year of manufacture"].as_u64().unwrap() as u16;
 
-        let date: EdidManufactureDate =
+        let date: EdidR4ManufactureDate =
             if let Some(val) = manufacturer_info["Week of manufacture"].as_u64() {
                 (val as u8, year).try_into().unwrap()
             } else {
