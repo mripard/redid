@@ -68,9 +68,9 @@ This crate is aimed at providing a typesafe abstraction to generate EDIDs.
       - [ ] If set, the color information in the Chromaticity Coordinates must match
       - [ ] Signaled, but the Gamma isn't set to 2.2
       - [ ] Not signaled, but the Chromaticities match SRGB
-    - [ ] EDID 1.4
-      - [ ] Suspend is deprecated
-      - [ ] Standby is deprecated
+    - [x] EDID 1.4
+      - [x] Suspend is deprecated
+      - [x] Standby is deprecated
     - [ ] Preferred Timing
       - [ ] EDID 1.3
         - [ ] Required

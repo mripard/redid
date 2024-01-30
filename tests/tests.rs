@@ -447,6 +447,7 @@ fn decode_feature_support_release_4(basic_display: &Value) -> EdidR4FeatureSuppo
         .as_bool()
         .expect("Couldn't decode Preferred timings");
 
+    #[allow(deprecated)]
     EdidR4FeatureSupport::builder()
         .color(decode_display_color_release_4(basic_display))
         .continuous_frequency(cf_bool)

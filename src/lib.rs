@@ -960,9 +960,11 @@ pub enum EdidR4DisplayColor {
 #[derive(Clone, Copy, Debug, TypedBuilder)]
 pub struct EdidR4FeatureSupport {
     #[builder(default)]
+    #[deprecated]
     standby: bool,
 
     #[builder(default)]
+    #[deprecated]
     suspend: bool,
 
     #[builder(default)]
@@ -983,10 +985,12 @@ impl IntoBytes for EdidR4FeatureSupport {
     fn into_bytes(self) -> Vec<u8> {
         let mut byte = 0;
 
+        #[allow(deprecated)]
         if self.standby {
             byte |= 1 << 7;
         }
 
+        #[allow(deprecated)]
         if self.suspend {
             byte |= 1 << 6;
         }
