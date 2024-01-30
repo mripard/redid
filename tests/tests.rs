@@ -234,11 +234,6 @@ fn decode_feature_support_release_3(basic_display: &Value) -> EdidR3FeatureSuppo
         .as_bool()
         .expect("Couldn't decode sRGB Standard Default");
 
-    let preferred_native_bool = basic_display
-        ["Preferred timing includes native timing pixel format and refresh rate"]
-        .as_bool()
-        .expect("Couldn't decode Preferred timings");
-
     EdidR3FeatureSupport::builder()
         .display_type(decode_display_type_release_3(basic_display))
         .default_gtf_supported(gtf_bool)
@@ -246,7 +241,6 @@ fn decode_feature_support_release_3(basic_display: &Value) -> EdidR3FeatureSuppo
         .standby(dpm_standby_bool)
         .suspend(dpm_suspend_bool)
         .srgb_default_color_space(srgb_default_bool)
-        .preferred_timing_mode_is_first_detailed_timing_block(preferred_native_bool)
         .build()
 }
 

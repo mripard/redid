@@ -71,9 +71,9 @@ This crate is aimed at providing a typesafe abstraction to generate EDIDs.
     - [x] EDID 1.4
       - [x] Suspend is deprecated
       - [x] Standby is deprecated
-    - [ ] Preferred Timing
-      - [ ] EDID 1.3
-        - [ ] Required
+    - [x] Preferred Timing
+      - [x] EDID 1.3
+        - [x] Required
 
 - [ ] Display XY Chromaticity Coordinates
   - [ ] Mandatory

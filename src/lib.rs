@@ -695,15 +695,13 @@ pub struct EdidR3FeatureSupport {
     srgb_default_color_space: bool,
 
     #[builder(default)]
-    preferred_timing_mode_is_first_detailed_timing_block: bool,
-
-    #[builder(default)]
     default_gtf_supported: bool,
 }
 
 impl IntoBytes for EdidR3FeatureSupport {
     fn into_bytes(self) -> Vec<u8> {
-        let mut byte = 0;
+        // Preferred timing mode is required for EDID 1.3
+        let mut byte = 1 << 1;
 
         if self.standby {
             byte |= 1 << 7;
@@ -721,10 +719,6 @@ impl IntoBytes for EdidR3FeatureSupport {
 
         if self.srgb_default_color_space {
             byte |= 1 << 2;
-        }
-
-        if self.preferred_timing_mode_is_first_detailed_timing_block {
-            byte |= 1 << 1;
         }
 
         if self.default_gtf_supported {
