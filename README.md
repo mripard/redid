@@ -51,18 +51,18 @@ This crate is aimed at providing a typesafe abstraction to generate EDIDs.
     - [x] Week is between 1 and 54
 
 - [ ] Basic Display Parameters and Features
-  - [ ] Mandatory
+  - [x] Mandatory
   - [ ] Video Input Definition
-    - [ ] Mandatory
+    - [x] Mandatory
       - [ ] Analog
         - [ ] Serrations on the vsync pulse are required when composite sync or sync on green
   - [x] Display Size
     - [x] Mandatory
     - [x] 0x00, 0x00 is allowed for undefined size
-  - [ ] Gamma
-    - [ ] Mandatory
+  - [x] Gamma
+    - [x] Mandatory
   - [ ] Feature Support
-    - [ ] Mandatory
+    - [x] Mandatory
     - [ ] Bits 3 and 4 must be consistent with bit 7 at 0x14
     - [ ] SRGB
       - [ ] If set, the color information in the Chromaticity Coordinates must match
