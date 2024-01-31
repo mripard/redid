@@ -845,13 +845,13 @@ pub struct EdidR4DisplayRangeVideoTimingsCVTR1 {
     supported_aspect_ratios: Vec<EdidR4DisplayRangeVideoTimingsAspectRatio>,
     preferred_aspect_ratio: EdidR4DisplayRangeVideoTimingsAspectRatio,
     standard_cvt_blanking_supported: bool,
-    reducted_cvt_blanking_supported: bool,
+    reduced_cvt_blanking_supported: bool,
     horizontal_shrink_supported: bool,
     horizontal_stretch_supported: bool,
     vertical_shrink_supported: bool,
     vertical_stretch_supported: bool,
     #[builder(setter(into))]
-    preferred_vertical_refreshed_rate: EdidDisplayRangeVerticalFreq,
+    preferred_vertical_refresh_rate: EdidDisplayRangeVerticalFreq,
 }
 
 #[derive(Clone, Debug)]
@@ -964,7 +964,7 @@ impl IntoBytes for EdidR4DisplayRangeLimits {
                         bytes.push(byte);
 
                         let mut byte = (cvt.preferred_aspect_ratio as u8) << 5;
-                        if cvt.reducted_cvt_blanking_supported {
+                        if cvt.reduced_cvt_blanking_supported {
                             byte |= 1 << 4;
                         }
 
@@ -990,7 +990,7 @@ impl IntoBytes for EdidR4DisplayRangeLimits {
                             byte |= 1 << 4;
                         }
                         bytes.push(byte);
-                        bytes.push(cvt.preferred_vertical_refreshed_rate.0);
+                        bytes.push(cvt.preferred_vertical_refresh_rate.0);
                     }
                 }
             }

@@ -920,7 +920,7 @@ fn decode_range_limit_cvt(desc: &Value) -> EdidR4DisplayRangeVideoTimingsCVT {
         .unwrap();
     let preferred_refresh_rate: EdidDisplayRangeVerticalFreq =
         preferred_refresh_rate_raw.try_into().unwrap();
-    let cvt = cvt.preferred_vertical_refreshed_rate(preferred_refresh_rate);
+    let cvt = cvt.preferred_vertical_refresh_rate(preferred_refresh_rate);
 
     let blanking = desc["CVT blanking support"]
         .as_object()
@@ -929,7 +929,7 @@ fn decode_range_limit_cvt(desc: &Value) -> EdidR4DisplayRangeVideoTimingsCVT {
     let reduced_blanking = blanking["Reduced CVT Blanking"]
         .as_bool()
         .expect("Couldn't decode Reduced Blanking");
-    let cvt = cvt.reducted_cvt_blanking_supported(reduced_blanking);
+    let cvt = cvt.reduced_cvt_blanking_supported(reduced_blanking);
 
     let standard_blanking = blanking["Standard CVT Blanking"]
         .as_bool()
