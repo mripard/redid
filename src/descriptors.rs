@@ -325,7 +325,7 @@ impl TryFrom<u8> for EdidDescriptor6BitsTiming {
 
 #[cfg(test)]
 mod test_edid_detailed_timings_6bits_fields {
-    use crate::descriptors::EdidDescriptor6BitsTiming;
+    use crate::EdidDescriptor6BitsTiming;
 
     #[test]
     fn test_range() {
@@ -348,7 +348,7 @@ impl TryFrom<u8> for EdidDescriptor8BitsTiming {
 
 #[cfg(test)]
 mod test_edid_detailed_timings_8bits_fields {
-    use crate::descriptors::EdidDescriptor8BitsTiming;
+    use crate::EdidDescriptor8BitsTiming;
 
     #[test]
     fn test_range() {
@@ -369,7 +369,7 @@ impl TryFrom<u16> for EdidDescriptor10BitsTiming {
 
 #[cfg(test)]
 mod test_edid_detailed_timings_10bits_fields {
-    use crate::descriptors::EdidDescriptor10BitsTiming;
+    use crate::EdidDescriptor10BitsTiming;
 
     #[test]
     fn test_range() {
@@ -392,7 +392,7 @@ impl TryFrom<u16> for EdidDescriptor12BitsTiming {
 
 #[cfg(test)]
 mod test_edid_detailed_timings_12bits_fields {
-    use crate::descriptors::EdidDescriptor12BitsTiming;
+    use crate::EdidDescriptor12BitsTiming;
 
     #[test]
     fn test_range() {
@@ -407,7 +407,7 @@ pub type EdidDetailedTimingSizeMm = EdidDescriptor12BitsTiming;
 
 #[cfg(test)]
 mod test_edid_detailed_timings_size {
-    use crate::descriptors::EdidDetailedTimingSizeMm;
+    use crate::EdidDetailedTimingSizeMm;
 
     #[test]
     fn test_range() {

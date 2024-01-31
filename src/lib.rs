@@ -10,15 +10,17 @@ use typed_builder::TypedBuilder;
 mod descriptors;
 
 pub use descriptors::{
-    EdidDescriptor, EdidDescriptorCustom, EdidDescriptorDetailedTiming, EdidDescriptorString,
-    EdidDetailedTimingAnalogSync, EdidDetailedTimingDigitalCompositeSync,
-    EdidDetailedTimingDigitalSeparateSync, EdidDetailedTimingDigitalSync,
-    EdidDetailedTimingDigitalSyncKind, EdidDetailedTimingStereo, EdidDetailedTimingSync,
-    EdidDisplayRangeHorizontalFreq, EdidDisplayRangePixelClock, EdidDisplayRangeVerticalFreq,
-    EdidDisplayRangeVideoTimingsGTF, EdidDisplayRangeVideoTimingsGTFStartFrequency,
-    EdidR3Descriptor, EdidR3DisplayRangeLimits, EdidR3DisplayRangeVideoTimingsSupport,
-    EdidR4Descriptor, EdidR4DescriptorEstablishedTimings, EdidR4DescriptorEstablishedTimingsIII,
-    EdidR4DisplayRangeHorizontalFreq, EdidR4DisplayRangeLimits, EdidR4DisplayRangeVerticalFreq,
+    EdidDescriptor, EdidDescriptor10BitsTiming, EdidDescriptor12BitsTiming,
+    EdidDescriptor6BitsTiming, EdidDescriptor8BitsTiming, EdidDescriptorCustom,
+    EdidDescriptorDetailedTiming, EdidDescriptorString, EdidDetailedTimingAnalogSync,
+    EdidDetailedTimingDigitalCompositeSync, EdidDetailedTimingDigitalSeparateSync,
+    EdidDetailedTimingDigitalSync, EdidDetailedTimingDigitalSyncKind, EdidDetailedTimingSizeMm,
+    EdidDetailedTimingStereo, EdidDetailedTimingSync, EdidDisplayRangeHorizontalFreq,
+    EdidDisplayRangePixelClock, EdidDisplayRangeVerticalFreq, EdidDisplayRangeVideoTimingsGTF,
+    EdidDisplayRangeVideoTimingsGTFStartFrequency, EdidR3Descriptor, EdidR3DisplayRangeLimits,
+    EdidR3DisplayRangeVideoTimingsSupport, EdidR4Descriptor, EdidR4DescriptorEstablishedTimings,
+    EdidR4DescriptorEstablishedTimingsIII, EdidR4DisplayRangeHorizontalFreq,
+    EdidR4DisplayRangeLimits, EdidR4DisplayRangeVerticalFreq,
     EdidR4DisplayRangeVideoTimingsAspectRatio, EdidR4DisplayRangeVideoTimingsCVT,
     EdidR4DisplayRangeVideoTimingsCVTR1, EdidR4DisplayRangeVideoTimingsSupport,
 };
