@@ -972,7 +972,7 @@ impl IntoBytes for EdidR4DisplayRangeLimits {
 
                         let mut byte: u8 = 0;
                         for ratio in cvt.supported_aspect_ratios {
-                            byte |= 1 << ((ratio as u8) + 3);
+                            byte |= 1 << (7 - (ratio as u8));
                         }
                         bytes.push(byte);
 
