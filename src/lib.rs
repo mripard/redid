@@ -1504,7 +1504,7 @@ pub struct EdidRelease3 {
     #[builder(setter(into))]
     product_code: EdidProductCode,
 
-    #[builder(default, setter(into))]
+    #[builder(default)]
     serial_number: Option<EdidSerialNumber>,
 
     date: EdidManufactureDate,
@@ -1562,7 +1562,7 @@ pub struct EdidRelease4 {
     #[builder(setter(into))]
     product_code: EdidProductCode,
 
-    #[builder(default, setter(into))]
+    #[builder(default)]
     serial_number: Option<EdidSerialNumber>,
 
     date: EdidR4Date,
