@@ -1586,3 +1586,269 @@ impl IntoBytes for EdidRelease4 {
         Edid::from(self).into_bytes()
     }
 }
+
+#[cfg(test)]
+mod test_edid_release4 {
+    use crate::{
+        descriptors::EdidDetailedTimingPixelClock, EdidAnalogSignalLevelStandard,
+        EdidAnalogVideoInputDefinition, EdidAnalogVideoSetup, EdidChromaticityPoint,
+        EdidChromaticityPoints, EdidDescriptor10BitsTiming, EdidDescriptor12BitsTiming,
+        EdidDescriptor6BitsTiming, EdidDescriptor8BitsTiming, EdidDescriptorDetailedTiming,
+        EdidDescriptorString, EdidDetailedTimingDigitalSeparateSync, EdidDetailedTimingDigitalSync,
+        EdidDetailedTimingDigitalSyncKind, EdidDetailedTimingSizeMm, EdidDetailedTimingStereo,
+        EdidDetailedTimingSync, EdidDisplayColorType, EdidDisplayRangePixelClock,
+        EdidDisplayRangeVerticalFreq, EdidDisplayTransferCharacteristics, EdidEstablishedTiming,
+        EdidFilterChromaticity, EdidManufacturer, EdidProductCode,
+        EdidR4BasicDisplayParametersFeatures, EdidR4Date, EdidR4Descriptor,
+        EdidR4DescriptorEstablishedTimings, EdidR4DescriptorEstablishedTimingsIII,
+        EdidR4DisplayColor, EdidR4DisplayRangeHorizontalFreq, EdidR4DisplayRangeLimits,
+        EdidR4DisplayRangeVerticalFreq, EdidR4DisplayRangeVideoTimingsAspectRatio,
+        EdidR4DisplayRangeVideoTimingsCVT, EdidR4DisplayRangeVideoTimingsCVTR1,
+        EdidR4DisplayRangeVideoTimingsSupport, EdidR4FeatureSupport, EdidR4ImageSize,
+        EdidR4ManufactureDate, EdidR4VideoInputDefinition, EdidRelease4, EdidScreenSize,
+        EdidScreenSizeLength, EdidSerialNumber, EdidStandardTiming,
+        EdidStandardTimingHorizontalSize, EdidStandardTimingRatio, EdidStandardTimingRefreshRate,
+        IntoBytes,
+    };
+
+    #[test]
+    fn test_binary_spec_example_1() {
+        // This is taken from the EDID 1.4 Section 6.1
+
+        let edid = EdidRelease4::builder()
+            .manufacturer(EdidManufacturer::try_from("ABC").unwrap())
+            .product_code(EdidProductCode::from(0xf206))
+            .serial_number(Some(EdidSerialNumber::from(0x00000001)))
+            .date(EdidR4Date::Manufacture(
+                EdidR4ManufactureDate::try_from((1, 2007)).unwrap(),
+            ))
+            .display_parameters_features(
+                EdidR4BasicDisplayParametersFeatures::builder()
+                    .video_input(EdidR4VideoInputDefinition::Analog(
+                        EdidAnalogVideoInputDefinition::builder()
+                            .signal_level(EdidAnalogSignalLevelStandard::V_0_700_S_0_300_T_1_000)
+                            .setup(EdidAnalogVideoSetup::BlankLevelIsBlackLevel)
+                            .separate_hv_sync_signals(true)
+                            .composite_sync_signal_on_hsync(true)
+                            .composite_sync_signal_on_green_video(true)
+                            .serrations_on_vsync(true)
+                            .build(),
+                    ))
+                    .size(EdidR4ImageSize::Size(
+                        EdidScreenSize::builder()
+                            .horizontal_cm(EdidScreenSizeLength::try_from(43).unwrap())
+                            .vertical_cm(EdidScreenSizeLength::try_from(32).unwrap())
+                            .build(),
+                    ))
+                    .display_transfer_characteristic(
+                        EdidDisplayTransferCharacteristics::try_from(2.2).unwrap(),
+                    )
+                    .feature_support(
+                        EdidR4FeatureSupport::builder()
+                            .active_off_is_very_low_power(true)
+                            .color(EdidR4DisplayColor::Analog(EdidDisplayColorType::RGBColor))
+                            .preferred_timing_mode_is_native(true)
+                            .continuous_frequency(true)
+                            .build(),
+                    )
+                    .build(),
+            )
+            .filter_chromaticity(EdidFilterChromaticity::Color(
+                EdidChromaticityPoints::builder()
+                    .red(EdidChromaticityPoint::try_from((0.627, 0.341)).unwrap())
+                    .green(EdidChromaticityPoint::try_from((0.292, 0.605)).unwrap())
+                    .blue(EdidChromaticityPoint::try_from((0.149, 0.072)).unwrap())
+                    .white(EdidChromaticityPoint::try_from((0.283, 0.297)).unwrap())
+                    .build(),
+            ))
+            .established_timings(vec![
+                EdidEstablishedTiming::ET_720_400_70hz,
+                EdidEstablishedTiming::ET_720_400_88hz,
+                EdidEstablishedTiming::ET_640_480_60hz,
+                EdidEstablishedTiming::ET_640_480_67hz,
+                EdidEstablishedTiming::ET_640_480_72hz,
+                EdidEstablishedTiming::ET_640_480_75hz,
+                EdidEstablishedTiming::ET_800_600_56hz,
+                EdidEstablishedTiming::ET_800_600_60hz,
+                EdidEstablishedTiming::ET_800_600_72hz,
+                EdidEstablishedTiming::ET_800_600_75hz,
+                EdidEstablishedTiming::ET_832_624_75hz,
+                EdidEstablishedTiming::ET_1024_768_87hz_Interlaced,
+                EdidEstablishedTiming::ET_1024_768_60hz,
+                EdidEstablishedTiming::ET_1024_768_70hz,
+                EdidEstablishedTiming::ET_1024_768_75hz,
+                EdidEstablishedTiming::ET_1280_1024_75hz,
+                EdidEstablishedTiming::ET_1152_870_75hz,
+            ])
+            .standard_timings(vec![
+                EdidStandardTiming::builder()
+                    .x(EdidStandardTimingHorizontalSize::try_from(1600).unwrap())
+                    .ratio(EdidStandardTimingRatio::Ratio_4_3)
+                    .frequency(EdidStandardTimingRefreshRate::try_from(85).unwrap())
+                    .build(),
+                EdidStandardTiming::builder()
+                    .x(EdidStandardTimingHorizontalSize::try_from(1600).unwrap())
+                    .ratio(EdidStandardTimingRatio::Ratio_4_3)
+                    .frequency(EdidStandardTimingRefreshRate::try_from(75).unwrap())
+                    .build(),
+                EdidStandardTiming::builder()
+                    .x(EdidStandardTimingHorizontalSize::try_from(1600).unwrap())
+                    .ratio(EdidStandardTimingRatio::Ratio_4_3)
+                    .frequency(EdidStandardTimingRefreshRate::try_from(70).unwrap())
+                    .build(),
+                EdidStandardTiming::builder()
+                    .x(EdidStandardTimingHorizontalSize::try_from(1600).unwrap())
+                    .ratio(EdidStandardTimingRatio::Ratio_4_3)
+                    .frequency(EdidStandardTimingRefreshRate::try_from(65).unwrap())
+                    .build(),
+                EdidStandardTiming::builder()
+                    .x(EdidStandardTimingHorizontalSize::try_from(1280).unwrap())
+                    .ratio(EdidStandardTimingRatio::Ratio_5_4)
+                    .frequency(EdidStandardTimingRefreshRate::try_from(85).unwrap())
+                    .build(),
+                EdidStandardTiming::builder()
+                    .x(EdidStandardTimingHorizontalSize::try_from(1280).unwrap())
+                    .ratio(EdidStandardTimingRatio::Ratio_5_4)
+                    .frequency(EdidStandardTimingRefreshRate::try_from(60).unwrap())
+                    .build(),
+                EdidStandardTiming::builder()
+                    .x(EdidStandardTimingHorizontalSize::try_from(1024).unwrap())
+                    .ratio(EdidStandardTimingRatio::Ratio_4_3)
+                    .frequency(EdidStandardTimingRefreshRate::try_from(85).unwrap())
+                    .build(),
+                EdidStandardTiming::builder()
+                    .x(EdidStandardTimingHorizontalSize::try_from(800).unwrap())
+                    .ratio(EdidStandardTimingRatio::Ratio_4_3)
+                    .frequency(EdidStandardTimingRefreshRate::try_from(85).unwrap())
+                    .build(),
+            ])
+            .descriptors(vec![
+                EdidR4Descriptor::DetailedTiming(
+                    EdidDescriptorDetailedTiming::builder()
+                        .pixel_clock(EdidDetailedTimingPixelClock::try_from(162_000).unwrap())
+                        .horizontal_addressable(EdidDescriptor12BitsTiming::try_from(1600).unwrap())
+                        .horizontal_blanking(EdidDescriptor12BitsTiming::try_from(560).unwrap())
+                        .vertical_addressable(EdidDescriptor12BitsTiming::try_from(1200).unwrap())
+                        .vertical_blanking(EdidDescriptor12BitsTiming::try_from(50).unwrap())
+                        .horizontal_front_porch(EdidDescriptor10BitsTiming::try_from(64).unwrap())
+                        .horizontal_sync_pulse(EdidDescriptor10BitsTiming::try_from(192).unwrap())
+                        .vertical_front_porch(EdidDescriptor6BitsTiming::try_from(1).unwrap())
+                        .vertical_sync_pulse(EdidDescriptor6BitsTiming::try_from(3).unwrap())
+                        .horizontal_size(EdidDetailedTimingSizeMm::try_from(427).unwrap())
+                        .vertical_size(EdidDetailedTimingSizeMm::try_from(320).unwrap())
+                        .horizontal_border(EdidDescriptor8BitsTiming::try_from(0).unwrap())
+                        .vertical_border(EdidDescriptor8BitsTiming::try_from(0).unwrap())
+                        .interlace(false)
+                        .stereo(EdidDetailedTimingStereo::None)
+                        .sync_type(EdidDetailedTimingSync::Digital(
+                            EdidDetailedTimingDigitalSync::builder()
+                                .kind(EdidDetailedTimingDigitalSyncKind::Separate(
+                                    EdidDetailedTimingDigitalSeparateSync::builder()
+                                        .vsync_positive(true)
+                                        .build(),
+                                ))
+                                .hsync_positive(true)
+                                .build(),
+                        ))
+                        .build(),
+                ),
+                EdidR4Descriptor::DisplayRangeLimits(
+                    EdidR4DisplayRangeLimits::builder()
+                        .min_vfreq(EdidR4DisplayRangeVerticalFreq::try_from(50).unwrap())
+                        .max_vfreq(EdidR4DisplayRangeVerticalFreq::try_from(90).unwrap())
+                        .min_hfreq(EdidR4DisplayRangeHorizontalFreq::try_from(30).unwrap())
+                        .max_hfreq(EdidR4DisplayRangeHorizontalFreq::try_from(110).unwrap())
+                        .max_pixelclock(EdidDisplayRangePixelClock::try_from(230).unwrap())
+                        .timings_support(EdidR4DisplayRangeVideoTimingsSupport::CVTSupported(
+                            EdidR4DisplayRangeVideoTimingsCVT::R1(
+                                EdidR4DisplayRangeVideoTimingsCVTR1::builder()
+                                    .maximum_active_pixels_per_line(1600)
+                                    .supported_aspect_ratios(vec![
+                                        EdidR4DisplayRangeVideoTimingsAspectRatio::Ratio_4_3,
+                                        EdidR4DisplayRangeVideoTimingsAspectRatio::Ratio_5_4,
+                                    ])
+                                    .preferred_aspect_ratio(
+                                        EdidR4DisplayRangeVideoTimingsAspectRatio::Ratio_4_3,
+                                    )
+                                    .standard_cvt_blanking_supported(true)
+                                    .horizontal_stretch_supported(true)
+                                    .vertical_stretch_supported(true)
+                                    .preferred_vertical_refresh_rate(
+                                        EdidDisplayRangeVerticalFreq::try_from(60).unwrap(),
+                                    )
+                                    .build(),
+                            ),
+                        ))
+                        .build(),
+                ),
+                EdidR4Descriptor::EstablishedTimings(
+                    EdidR4DescriptorEstablishedTimings::builder()
+                        .established_timings(vec![
+                            EdidR4DescriptorEstablishedTimingsIII::ET_640_350_85Hz,
+                            EdidR4DescriptorEstablishedTimingsIII::ET_640_400_85Hz,
+                            EdidR4DescriptorEstablishedTimingsIII::ET_720_400_85Hz,
+                            EdidR4DescriptorEstablishedTimingsIII::ET_640_480_85Hz,
+                            EdidR4DescriptorEstablishedTimingsIII::ET_800_600_85Hz,
+                            EdidR4DescriptorEstablishedTimingsIII::ET_1024_768_85Hz,
+                            EdidR4DescriptorEstablishedTimingsIII::ET_1152_864_75Hz,
+                            EdidR4DescriptorEstablishedTimingsIII::ET_1280_960_60Hz,
+                            EdidR4DescriptorEstablishedTimingsIII::ET_1280_960_85Hz,
+                            EdidR4DescriptorEstablishedTimingsIII::ET_1280_1024_60Hz,
+                            EdidR4DescriptorEstablishedTimingsIII::ET_1280_1024_85Hz,
+                            EdidR4DescriptorEstablishedTimingsIII::ET_1400_1050_60Hz,
+                            EdidR4DescriptorEstablishedTimingsIII::ET_1400_1050_75Hz,
+                            EdidR4DescriptorEstablishedTimingsIII::ET_1400_1050_85Hz,
+                            EdidR4DescriptorEstablishedTimingsIII::ET_1600_1200_60Hz,
+                            EdidR4DescriptorEstablishedTimingsIII::ET_1600_1200_65Hz,
+                            EdidR4DescriptorEstablishedTimingsIII::ET_1600_1200_70Hz,
+                            EdidR4DescriptorEstablishedTimingsIII::ET_1600_1200_75Hz,
+                            EdidR4DescriptorEstablishedTimingsIII::ET_1600_1200_85Hz,
+                        ])
+                        .build(),
+                ),
+                EdidR4Descriptor::ProductName(EdidDescriptorString::try_from("ABC LCD21").unwrap()),
+            ])
+            .build();
+
+        assert_eq!(
+            edid.into_bytes(),
+            &[
+                0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, // Header
+                0x04, 0x43, // Manufacturer
+                0x06, 0xf2, // Product Code
+                0x01, 0x00, 0x00, 0x00, // Serial Number
+                0x01, 0x11, // Date
+                0x01, 0x04, // Version
+                0x0f, // Video Input Definition
+                0x2b, 0x20, // Size
+                0x78, // Display Gamma
+                0x2b, // Feature Support Byte
+                0x9c, 0x68, 0xa0, 0x57, 0x4a, 0x9b, 0x26, 0x12, 0x48,
+                0x4c, // Chromaticity Coordinates
+                0xff, 0xff, 0x80, // Established Timings
+                // ---------------------------Standard Timings -----------------------------------
+                0xa9, 0x59, 0xa9, 0x4f, 0xa9, 0x4a, 0xa9, 0x45, 0x81, 0x99, 0x81, 0x80, 0x61, 0x59,
+                0x45, 0x59,
+                // ------------------------ Detailed Timing Block --------------------------------
+                0x48, 0x3f, 0x40, 0x30, 0x62, 0xb0, 0x32, 0x40, 0x40, 0xc0, 0x13, 0x00, 0xab, 0x40,
+                0x11, 0x00, 0x00, 0x1e,
+                // ------------------------ Display Range Limits ---------------------------------
+                0x00, 0x00, 0x00, 0xfd, 0x00, 0x32, 0x5a, 0x1e, 0x6e, 0x17, 0x04, 0x11, 0x00, 0xc8,
+                0x90, 0x08, // <- The spec example got that byte wrong (I think?)
+                0x50, 0x3c,
+                // --------------------Established Timings III Block -----------------------------
+                0x00, 0x00, 0x00, 0xf7, 0x00, 0x0a, 0xf7, 0x0f, 0x03, 0x87, 0xc0, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00,
+                // ---------------------- Display Product Name -----------------------------------
+                0x00, 0x00, 0x00, 0xfc, 0x00, 0x41, 0x42, 0x43, 0x20, 0x4c, 0x43, 0x44, 0x32, 0x31,
+                0x0a, 0x20, 0x20, 0x20,
+                // -------------------------- Extension Flag -------------------------------------
+                0x00,
+                // ----------------------------- Checksum ----------------------------------------
+                // The checksum isn't valid in the example either. It should be 0x9a, and since some
+                // part of the EDID were wrong it's further modified.
+                0x92,
+            ]
+        );
+    }
+}
