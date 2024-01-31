@@ -844,12 +844,25 @@ pub struct EdidR4DisplayRangeVideoTimingsCVTR1 {
     #[builder(via_mutators)]
     supported_aspect_ratios: Vec<EdidR4DisplayRangeVideoTimingsAspectRatio>,
     preferred_aspect_ratio: EdidR4DisplayRangeVideoTimingsAspectRatio,
+
+    #[builder(default)]
     standard_cvt_blanking_supported: bool,
+
+    #[builder(default)]
     reduced_cvt_blanking_supported: bool,
+
+    #[builder(default)]
     horizontal_shrink_supported: bool,
+
+    #[builder(default)]
     horizontal_stretch_supported: bool,
+
+    #[builder(default)]
     vertical_shrink_supported: bool,
+
+    #[builder(default)]
     vertical_stretch_supported: bool,
+
     #[builder(setter(into))]
     preferred_vertical_refresh_rate: EdidDisplayRangeVerticalFreq,
 }
