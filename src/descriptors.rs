@@ -104,7 +104,17 @@ impl IntoBytes for EdidDescriptorCustom {
         bytes.extend_from_slice(&self.payload.0);
         bytes.resize(EDID_DESCRIPTOR_LEN, 0);
 
+        let len = bytes.len();
+        assert_eq!(
+            len, EDID_DESCRIPTOR_LEN,
+            "Custom Descriptor is too large ({len} vs expected {EDID_DESCRIPTOR_PAYLOAD_LEN})",
+        );
+
         bytes
+    }
+
+    fn size(&self) -> usize {
+        EDID_DESCRIPTOR_LEN
     }
 }
 
@@ -193,6 +203,10 @@ impl IntoBytes for EdidDescriptorString {
         );
         bytes
     }
+
+    fn size(&self) -> usize {
+        EDID_DESCRIPTOR_PAYLOAD_LEN
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -239,7 +253,6 @@ mod test_descriptor_detailed_timing_pixel_clock {
         assert!(EdidDetailedTimingPixelClock::try_from(655_350).is_ok());
         assert!(EdidDetailedTimingPixelClock::try_from(655_351).is_err());
         assert!(EdidDetailedTimingPixelClock::try_from(u32::MAX).is_err());
-
     }
 }
 
@@ -583,7 +596,17 @@ impl IntoBytes for EdidDescriptorDetailedTiming {
             flags,
         ]);
 
+        let len = data.len();
+        assert_eq!(
+            len, EDID_DESCRIPTOR_LEN,
+            "Descriptor is larger than it should ({len} vs expected {EDID_DESCRIPTOR_LEN} bytes)",
+        );
+
         data
+    }
+
+    fn size(&self) -> usize {
+        EDID_DESCRIPTOR_LEN
     }
 }
 
@@ -746,7 +769,17 @@ impl IntoBytes for EdidR3DisplayRangeLimits {
             }
         };
 
+        let len = bytes.len();
+        assert_eq!(
+            len, EDID_DESCRIPTOR_PAYLOAD_LEN,
+            "Descriptor Payload is larger than it should ({len} vs expected {EDID_DESCRIPTOR_PAYLOAD_LEN} bytes)",
+        );
+
         bytes
+    }
+
+    fn size(&self) -> usize {
+        EDID_DESCRIPTOR_PAYLOAD_LEN
     }
 }
 
@@ -1014,7 +1047,19 @@ impl IntoBytes for EdidR4DisplayRangeLimits {
             }
         };
 
+        let len = bytes.len();
+        assert_eq!(
+            len,
+            EDID_DESCRIPTOR_PAYLOAD_LEN + 1,
+            "Descriptor Payload is larger than it should ({len} vs expected {} bytes)",
+            EDID_DESCRIPTOR_PAYLOAD_LEN + 1
+        );
+
         bytes
+    }
+
+    fn size(&self) -> usize {
+        EDID_DESCRIPTOR_PAYLOAD_LEN + 1
     }
 }
 
@@ -1102,7 +1147,17 @@ impl IntoBytes for EdidR4DescriptorEstablishedTimings {
         bytes.extend_from_slice(&array);
         bytes.extend_from_slice(&[0; 6]);
 
+        let len = bytes.len();
+        assert_eq!(
+            len, EDID_DESCRIPTOR_PAYLOAD_LEN,
+            "Descriptor Payload is larger than it should ({len} vs expected {EDID_DESCRIPTOR_PAYLOAD_LEN} bytes)",
+        );
+
         bytes
+    }
+
+    fn size(&self) -> usize {
+        EDID_DESCRIPTOR_PAYLOAD_LEN
     }
 }
 
@@ -1171,6 +1226,10 @@ impl IntoBytes for EdidR3Descriptor {
 
         bytes
     }
+
+    fn size(&self) -> usize {
+        EDID_DESCRIPTOR_LEN
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -1229,6 +1288,10 @@ impl IntoBytes for EdidR4Descriptor {
         );
 
         bytes
+    }
+
+    fn size(&self) -> usize {
+        EDID_DESCRIPTOR_LEN
     }
 }
 
@@ -1307,5 +1370,9 @@ impl IntoBytes for Vec<EdidDescriptor> {
         );
 
         bytes
+    }
+
+    fn size(&self) -> usize {
+        EDID_DESCRIPTOR_LEN * EDID_DESCRIPTORS_NUM
     }
 }
