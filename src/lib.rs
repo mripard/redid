@@ -1076,9 +1076,9 @@ mod test_chromaticity_coordinate {
 
     #[test]
     fn test_binary_spec() {
-        assert_eq!(EdidChromaticityCoordinate(0.610).into_raw(), 0b1001110001);
-        assert_eq!(EdidChromaticityCoordinate(0.307).into_raw(), 0b0100111010);
-        assert_eq!(EdidChromaticityCoordinate(0.150).into_raw(), 0b0010011010);
+        assert_eq!(EdidChromaticityCoordinate(0.610).into_raw(), 0b10_0111_0001);
+        assert_eq!(EdidChromaticityCoordinate(0.307).into_raw(), 0b01_0011_1010);
+        assert_eq!(EdidChromaticityCoordinate(0.150).into_raw(), 0b00_1001_1010);
     }
 }
 
