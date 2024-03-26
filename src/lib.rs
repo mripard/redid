@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+
 use core::{
     array,
     convert::{TryFrom, TryInto},
@@ -12,17 +14,19 @@ mod descriptors;
 pub use descriptors::{
     EdidDescriptor, EdidDescriptor10BitsTiming, EdidDescriptor12BitsTiming,
     EdidDescriptor6BitsTiming, EdidDescriptor8BitsTiming, EdidDescriptorCustom,
-    EdidDescriptorDetailedTiming, EdidDescriptorString, EdidDetailedTimingAnalogSync,
-    EdidDetailedTimingDigitalCompositeSync, EdidDetailedTimingDigitalSeparateSync,
-    EdidDetailedTimingDigitalSync, EdidDetailedTimingDigitalSyncKind, EdidDetailedTimingSizeMm,
-    EdidDetailedTimingStereo, EdidDetailedTimingSync, EdidDisplayRangeHorizontalFreq,
-    EdidDisplayRangePixelClock, EdidDisplayRangeVerticalFreq, EdidDisplayRangeVideoTimingsGTF,
+    EdidDescriptorCustomPayload, EdidDescriptorCustomTag, EdidDescriptorDetailedTiming,
+    EdidDescriptorString, EdidDetailedTimingAnalogSync, EdidDetailedTimingDigitalCompositeSync,
+    EdidDetailedTimingDigitalSeparateSync, EdidDetailedTimingDigitalSync,
+    EdidDetailedTimingDigitalSyncKind, EdidDetailedTimingSizeMm, EdidDetailedTimingStereo,
+    EdidDetailedTimingSync, EdidDisplayRangeHorizontalFreq, EdidDisplayRangePixelClock,
+    EdidDisplayRangeVerticalFreq, EdidDisplayRangeVideoTimingsGTF,
     EdidDisplayRangeVideoTimingsGTFStartFrequency, EdidR3Descriptor, EdidR3DisplayRangeLimits,
     EdidR3DisplayRangeVideoTimingsSupport, EdidR4Descriptor, EdidR4DescriptorEstablishedTimings,
     EdidR4DescriptorEstablishedTimingsIII, EdidR4DisplayRangeHorizontalFreq,
     EdidR4DisplayRangeLimits, EdidR4DisplayRangeVerticalFreq,
     EdidR4DisplayRangeVideoTimingsAspectRatio, EdidR4DisplayRangeVideoTimingsCVT,
-    EdidR4DisplayRangeVideoTimingsCVTR1, EdidR4DisplayRangeVideoTimingsSupport,
+    EdidR4DisplayRangeVideoTimingsCVTPixelClockDiff, EdidR4DisplayRangeVideoTimingsCVTR1,
+    EdidR4DisplayRangeVideoTimingsSupport,
 };
 
 mod utils;
@@ -1117,6 +1121,7 @@ pub struct EdidChromaticityPoints {
     blue: EdidChromaticityPoint,
 }
 
+#[allow(variant_size_differences)]
 #[derive(Clone, Copy, Debug)]
 pub enum EdidFilterChromaticity {
     // FIXME: This must be consistent with EdidDisplayColorType.
@@ -1346,8 +1351,7 @@ impl IntoBytes for Vec<EdidStandardTiming> {
         let len = bytes.len();
         assert_eq!(
             len, EDID_STD_TIMINGS_LEN,
-            "Standard timings array is larger than it should ({} vs expected {} bytes",
-            len, EDID_STD_TIMINGS_LEN
+            "Standard timings array is larger than it should ({len} vs expected {EDID_STD_TIMINGS_LEN} bytes",
         );
 
         bytes
@@ -1476,26 +1480,32 @@ impl From<EdidRelease4> for Edid {
 
 #[derive(Clone, Debug, TypedBuilder)]
 #[builder(mutators(
+    #[allow(unreachable_pub)]
     pub fn descriptors(&mut self, d: Vec<EdidR3Descriptor>) {
         self.descriptors = d.into_iter().map(EdidDescriptor::R3).collect();
     }
 
+    #[allow(unreachable_pub)]
     pub fn add_descriptor(&mut self, d: EdidR3Descriptor) {
         self.descriptors.push(EdidDescriptor::R3(d));
     }
 
+    #[allow(unreachable_pub)]
     pub fn established_timings(&mut self, et: Vec<EdidEstablishedTiming>) {
         self.established_timings = et;
     }
 
+    #[allow(unreachable_pub)]
     pub fn add_established_timing(&mut self, et: EdidEstablishedTiming) {
         self.established_timings.push(et);
     }
 
+    #[allow(unreachable_pub)]
     pub fn standard_timings(&mut self, st: Vec<EdidStandardTiming>) {
         self.standard_timings = st;
     }
 
+    #[allow(unreachable_pub)]
     pub fn add_standard_timing(&mut self, st: EdidStandardTiming) {
         self.standard_timings.push(st);
     }
@@ -1534,26 +1544,32 @@ impl IntoBytes for EdidRelease3 {
 
 #[derive(Clone, Debug, TypedBuilder)]
 #[builder(mutators(
+    #[allow(unreachable_pub)]
     pub fn descriptors(&mut self, d: Vec<EdidR4Descriptor>) {
         self.descriptors = d.into_iter().map(EdidDescriptor::R4).collect();
     }
 
+    #[allow(unreachable_pub)]
     pub fn add_descriptor(&mut self, d: EdidR4Descriptor) {
         self.descriptors.push(EdidDescriptor::R4(d));
     }
 
+    #[allow(unreachable_pub)]
     pub fn established_timings(&mut self, et: Vec<EdidEstablishedTiming>) {
         self.established_timings = et;
     }
 
+    #[allow(unreachable_pub)]
     pub fn add_established_timing(&mut self, et: EdidEstablishedTiming) {
         self.established_timings.push(et);
     }
 
+    #[allow(unreachable_pub)]
     pub fn standard_timings(&mut self, st: Vec<EdidStandardTiming>) {
         self.standard_timings = st;
     }
 
+    #[allow(unreachable_pub)]
     pub fn add_standard_timing(&mut self, st: EdidStandardTiming) {
         self.standard_timings.push(st);
     }
