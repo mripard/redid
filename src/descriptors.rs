@@ -9,7 +9,8 @@ use num_traits::{Bounded, CheckedShl, Num, WrappingSub};
 use typed_builder::TypedBuilder;
 
 use crate::{
-    utils::round_up, EdidTypeConversionError, IntoBytes, EDID_DESCRIPTORS_NUM, EDID_DESCRIPTOR_LEN,
+    utils::{div_round_up, round_up},
+    EdidTypeConversionError, IntoBytes, EDID_DESCRIPTORS_NUM, EDID_DESCRIPTOR_LEN,
     EDID_DESCRIPTOR_PAYLOAD_LEN,
 };
 
@@ -950,7 +951,7 @@ impl IntoBytes for EdidR4DisplayRangeLimits {
                         )
                         .expect("Pixel Clock value would overflow our type")
                         .into_raw();
-                        let raw_max_pix = round_up(&cvt.maximum_active_pixels_per_line, &8) / 8;
+                        let raw_max_pix = div_round_up(&cvt.maximum_active_pixels_per_line, &8);
                         let max_pix_hi = ((raw_max_pix >> 8) & 0x3) as u8;
                         let max_pix_lo = (raw_max_pix & 0xff) as u8;
 
