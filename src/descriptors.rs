@@ -5,27 +5,13 @@ use core::{
 };
 
 use encoding::{all::ISO_8859_1, EncoderTrap, Encoding};
-use num_traits::{Bounded, CheckedShl, Euclid, FromPrimitive, Num, WrappingSub};
+use num_traits::{Bounded, CheckedShl, Num, WrappingSub};
 use typed_builder::TypedBuilder;
 
 use crate::{
-    EdidTypeConversionError, IntoBytes, EDID_DESCRIPTORS_NUM, EDID_DESCRIPTOR_LEN,
+    utils::round_up, EdidTypeConversionError, IntoBytes, EDID_DESCRIPTORS_NUM, EDID_DESCRIPTOR_LEN,
     EDID_DESCRIPTOR_PAYLOAD_LEN,
 };
-
-pub(crate) fn round_up<T>(number: T, multiple: T) -> T
-where
-    T: Num + Euclid + FromPrimitive,
-{
-    let rem = number.rem_euclid(&multiple);
-
-    if rem.is_zero() {
-        return number;
-    }
-
-    let div = number.div_euclid(&multiple) + T::one();
-    div * multiple
-}
 
 fn compute_max_value<T>(num_bits: u32) -> T
 where
@@ -620,7 +606,7 @@ pub struct EdidDisplayRangePixelClock(u16);
 
 impl EdidDisplayRangePixelClock {
     fn round(self) -> u16 {
-        round_up(self.0, 10)
+        round_up(&self.0, &10)
     }
 
     fn into_raw(self) -> u8 {
@@ -964,7 +950,7 @@ impl IntoBytes for EdidR4DisplayRangeLimits {
                         )
                         .expect("Pixel Clock value would overflow our type")
                         .into_raw();
-                        let raw_max_pix = round_up(cvt.maximum_active_pixels_per_line, 8) / 8;
+                        let raw_max_pix = round_up(&cvt.maximum_active_pixels_per_line, &8) / 8;
                         let max_pix_hi = ((raw_max_pix >> 8) & 0x3) as u8;
                         let max_pix_lo = (raw_max_pix & 0xff) as u8;
 

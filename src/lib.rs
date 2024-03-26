@@ -25,6 +25,8 @@ pub use descriptors::{
     EdidR4DisplayRangeVideoTimingsCVTR1, EdidR4DisplayRangeVideoTimingsSupport,
 };
 
+mod utils;
+
 const EDID_BASE_LEN: usize = 128;
 const EDID_MANUFACTURER_LEN: usize = 3;
 const EDID_STD_TIMINGS_LEN: usize = 16;
