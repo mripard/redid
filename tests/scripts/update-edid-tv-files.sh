@@ -2,7 +2,7 @@
 
 BASE_DIR=$(dirname $(realpath "$0"))
 EDID_DIR=$BASE_DIR/../edid-db/
-EDIDTV_DIR="$EDID_DIR/edidtv"
+EDIDTV_DIR="$EDID_DIR/edid.tv"
 
 MAX_FAILURES=10
 MAX_ID=5000
