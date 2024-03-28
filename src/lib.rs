@@ -30,6 +30,17 @@ pub use descriptors::{
     EdidR4DisplayRangeVideoTimingsSupport,
 };
 
+mod extensions;
+
+pub use extensions::{
+    EdidExtension, EdidExtensionCTA861, EdidExtensionCTA861AudioDataBlock,
+    EdidExtensionCTA861AudioDataBlockChannels, EdidExtensionCTA861AudioDataBlockDesc,
+    EdidExtensionCTA861AudioDataBlockLPCM, EdidExtensionCTA861AudioDataBlockSamplingFrequency,
+    EdidExtensionCTA861AudioDataBlockSamplingRate, EdidExtensionCTA861HdmiDataBlock,
+    EdidExtensionCTA861Revision3, EdidExtensionCTA861Revision3DataBlock,
+    EdidExtensionCTA861SpeakerAllocationDataBlock, EdidExtensionCTA861VideoDataBlock,
+};
+
 mod utils;
 
 const EDID_BASE_LEN: usize = 128;
@@ -1725,6 +1736,7 @@ struct Edid {
     established_timings: Vec<EdidEstablishedTiming>,
     standard_timings: Vec<EdidStandardTiming>,
     descriptors: Vec<EdidDescriptor>,
+    extensions: Vec<EdidExtension>,
 }
 
 impl IntoBytes for Edid {
@@ -1756,8 +1768,12 @@ impl IntoBytes for Edid {
         bytes.extend_from_slice(&self.standard_timings.into_bytes());
         bytes.extend_from_slice(&self.descriptors.into_bytes());
 
-        // FIXME: Support the extensions
-        bytes.push(0);
+        let num_exts = self
+            .extensions
+            .len()
+            .to_u8()
+            .expect("Number of extensions would overflow our type.");
+        bytes.push(num_exts);
 
         let mut sum: u8 = 0;
         for byte in &bytes {
@@ -1767,13 +1783,17 @@ impl IntoBytes for Edid {
         let checksum = 0u8.wrapping_sub(sum);
         bytes.push(checksum);
 
+        for ext in self.extensions {
+            bytes.extend_from_slice(&ext.into_bytes());
+        }
+
         assert_eq!(
-            bytes.len(),
-            EDID_BASE_LEN,
-            "EDID is larger than it should ({} vs expected {} bytes",
-            bytes.len(),
-            EDID_BASE_LEN
+            bytes.len() % EDID_BASE_LEN,
+            0,
+            "EDID must be {EDID_BASE_LEN} bytes aligned (actual size {})",
+            bytes.len()
         );
+
         bytes
     }
 
@@ -1795,6 +1815,7 @@ impl From<EdidRelease3> for Edid {
             established_timings: value.established_timings,
             standard_timings: value.standard_timings,
             descriptors: value.descriptors,
+            extensions: value.extensions,
         }
     }
 }
@@ -1812,6 +1833,7 @@ impl From<EdidRelease4> for Edid {
             established_timings: value.established_timings,
             standard_timings: value.standard_timings,
             descriptors: value.descriptors,
+            extensions: value.extensions,
         }
     }
 }
@@ -1847,6 +1869,16 @@ impl From<EdidRelease4> for Edid {
     pub fn add_standard_timing(&mut self, st: EdidStandardTiming) {
         self.standard_timings.push(st);
     }
+
+    #[allow(unreachable_pub)]
+    pub fn extensions(&mut self, ext: Vec<EdidExtension>) {
+        self.extensions = ext;
+    }
+
+    #[allow(unreachable_pub)]
+    pub fn add_extension(&mut self, ext: EdidExtension) {
+        self.extensions.push(ext);
+    }
 ))]
 pub struct EdidRelease3 {
     manufacturer: EdidManufacturer,
@@ -1872,6 +1904,9 @@ pub struct EdidRelease3 {
     // FIXME: Display Range Limits is mandatory
     #[builder(via_mutators)]
     descriptors: Vec<EdidDescriptor>,
+
+    #[builder(via_mutators)]
+    extensions: Vec<EdidExtension>,
 }
 
 impl IntoBytes for EdidRelease3 {
@@ -1923,6 +1958,16 @@ impl IntoBytes for EdidRelease3 {
     pub fn add_standard_timing(&mut self, st: EdidStandardTiming) {
         self.standard_timings.push(st);
     }
+
+    #[allow(unreachable_pub)]
+    pub fn extensions(&mut self, ext: Vec<EdidExtension>) {
+        self.extensions = ext;
+    }
+
+    #[allow(unreachable_pub)]
+    pub fn add_extension(&mut self, ext: EdidExtension) {
+        self.extensions.push(ext);
+    }
 ))]
 pub struct EdidRelease4 {
     manufacturer: EdidManufacturer,
@@ -1947,6 +1992,9 @@ pub struct EdidRelease4 {
     // FIXME: If continuous frequency, a display range limits descriptor is required
     #[builder(via_mutators)]
     descriptors: Vec<EdidDescriptor>,
+
+    #[builder(via_mutators)]
+    extensions: Vec<EdidExtension>,
 }
 
 impl IntoBytes for EdidRelease4 {

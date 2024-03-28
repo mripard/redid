@@ -1444,7 +1444,7 @@ fn edid_equals(current: &[u8], expected: &[u8]) -> bool {
         return false;
     }
 
-    for i in 0..0x80 {
+    for i in 0..expected.len() {
         if current[i] == expected[i] {
             continue;
         }
@@ -1468,14 +1468,6 @@ fn edid_equals(current: &[u8], expected: &[u8]) -> bool {
             &current[0x26..0x36].try_into().unwrap(),
             &expected[0x26..0x36].try_into().unwrap(),
         ) {
-            continue;
-        }
-
-        // We don't support extensions just yet. Ignore it,
-        // and account for that difference in the checksum
-        if i == 0x7e {
-            checksum_offset[0] += current[i];
-            checksum_offset[1] += expected[i];
             continue;
         }
 
