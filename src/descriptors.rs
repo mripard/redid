@@ -5,37 +5,38 @@ use core::{
 };
 
 use encoding::{all::ISO_8859_1, EncoderTrap, Encoding};
-use num_traits::{Bounded, CheckedShl, Euclid, FromPrimitive, Num, WrappingSub};
+use num_traits::{Bounded, CheckedShl, Num, ToPrimitive, WrappingSub};
 use typed_builder::TypedBuilder;
 
 use crate::{
+    utils::{div_round_up, round_up},
     EdidTypeConversionError, IntoBytes, EDID_DESCRIPTORS_NUM, EDID_DESCRIPTOR_LEN,
     EDID_DESCRIPTOR_PAYLOAD_LEN,
 };
 
-pub(crate) fn round_up<T>(number: T, multiple: T) -> T
-where
-    T: Num + Euclid + FromPrimitive,
-{
-    let rem = number.rem_euclid(&multiple);
-
-    if rem.is_zero() {
-        return number;
-    }
-
-    let div = number.div_euclid(&multiple) + T::one();
-    div * multiple
-}
-
-fn compute_max_value<T>(num_bits: u32) -> T
+fn compute_max_value<T>(num_bits: usize) -> T
 where
     T: Num + Bounded + CheckedShl + WrappingSub,
 {
-    let type_num_bits = u32::try_from(std::mem::size_of::<T>() * 8).unwrap();
+    let type_num_bits = core::mem::size_of::<T>() * 8;
+
+    assert!(
+        num_bits <= type_num_bits,
+        "Number of bits is greater than can be stored in the type"
+    );
 
     match num_bits.cmp(&type_num_bits) {
         cmp::Ordering::Less => {
-            let shl = T::checked_shl(&T::one(), num_bits).unwrap();
+            // Thanks to the assert above, we know that num_bits is going to be at most 128, which
+            // fits into a u32 with plenty of headroom.
+            #[allow(clippy::unwrap_used)]
+            let rhs = num_bits.to_u32().unwrap();
+
+            // checked_shl returns None if rhs is equal to or larger than the number of bits in T.
+            // However, we're in that branch only if the number of bits we want to shift of is
+            // strictly lower than the number of bits in our type, so we'll always get a value.
+            #[allow(clippy::unwrap_used)]
+            let shl = T::checked_shl(&T::one(), rhs).unwrap();
             T::wrapping_sub(&shl, &T::one())
         }
         cmp::Ordering::Equal => T::max_value(),
@@ -103,7 +104,17 @@ impl IntoBytes for EdidDescriptorCustom {
         bytes.extend_from_slice(&self.payload.0);
         bytes.resize(EDID_DESCRIPTOR_LEN, 0);
 
+        let len = bytes.len();
+        assert_eq!(
+            len, EDID_DESCRIPTOR_LEN,
+            "Custom Descriptor is too large ({len} vs expected {EDID_DESCRIPTOR_PAYLOAD_LEN})",
+        );
+
         bytes
+    }
+
+    fn size(&self) -> usize {
+        EDID_DESCRIPTOR_LEN
     }
 }
 
@@ -192,6 +203,10 @@ impl IntoBytes for EdidDescriptorString {
         );
         bytes
     }
+
+    fn size(&self) -> usize {
+        EDID_DESCRIPTOR_PAYLOAD_LEN
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -211,7 +226,7 @@ impl TryFrom<u32> for EdidDetailedTimingPixelClock {
             return Err(EdidTypeConversionError::Range(
                 value,
                 Some(10),
-                Some(655350),
+                Some(655_350),
             ));
         }
 
@@ -238,7 +253,6 @@ mod test_descriptor_detailed_timing_pixel_clock {
         assert!(EdidDetailedTimingPixelClock::try_from(655_350).is_ok());
         assert!(EdidDetailedTimingPixelClock::try_from(655_351).is_err());
         assert!(EdidDetailedTimingPixelClock::try_from(u32::MAX).is_err());
-
     }
 }
 
@@ -292,11 +306,11 @@ pub enum EdidDetailedTimingStereo {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct EdidDescriptorTiming<const N: u32, T: fmt::Display>(T);
+pub struct EdidDescriptorTiming<const N: usize, T: fmt::Display>(T);
 
-impl<const N: u32, T> EdidDescriptorTiming<N, T>
+impl<const N: usize, T> EdidDescriptorTiming<N, T>
 where
-    T: Num + Bounded + CheckedShl + WrappingSub + cmp::PartialOrd + fmt::Display,
+    T: Num + Bounded + CheckedShl + WrappingSub + PartialOrd + fmt::Display,
 {
     fn try_from(value: T) -> Result<Self, EdidTypeConversionError<T>> {
         let max = compute_max_value::<T>(N);
@@ -448,6 +462,7 @@ pub struct EdidDescriptorDetailedTiming {
 }
 
 impl IntoBytes for EdidDescriptorDetailedTiming {
+    #[allow(clippy::too_many_lines)]
     fn into_bytes(self) -> Vec<u8> {
         let mut data = Vec::with_capacity(EDID_DESCRIPTOR_LEN);
 
@@ -581,7 +596,17 @@ impl IntoBytes for EdidDescriptorDetailedTiming {
             flags,
         ]);
 
+        let len = data.len();
+        assert_eq!(
+            len, EDID_DESCRIPTOR_LEN,
+            "Descriptor is larger than it should ({len} vs expected {EDID_DESCRIPTOR_LEN} bytes)",
+        );
+
         data
+    }
+
+    fn size(&self) -> usize {
+        EDID_DESCRIPTOR_LEN
     }
 }
 
@@ -620,7 +645,7 @@ pub struct EdidDisplayRangePixelClock(u16);
 
 impl EdidDisplayRangePixelClock {
     fn round(self) -> u16 {
-        round_up(self.0, 10)
+        round_up(&self.0, &10)
     }
 
     fn into_raw(self) -> u8 {
@@ -744,7 +769,17 @@ impl IntoBytes for EdidR3DisplayRangeLimits {
             }
         };
 
+        let len = bytes.len();
+        assert_eq!(
+            len, EDID_DESCRIPTOR_PAYLOAD_LEN,
+            "Descriptor Payload is larger than it should ({len} vs expected {EDID_DESCRIPTOR_PAYLOAD_LEN} bytes)",
+        );
+
         bytes
+    }
+
+    fn size(&self) -> usize {
+        EDID_DESCRIPTOR_PAYLOAD_LEN
     }
 }
 
@@ -804,6 +839,7 @@ pub enum EdidR4DisplayRangeVideoTimingsAspectRatio {
     Ratio_15_9,
 }
 
+#[derive(Clone, Copy, Debug)]
 pub struct EdidR4DisplayRangeVideoTimingsCVTPixelClockDiff(u8);
 
 impl TryFrom<EdidDisplayRangePixelClock> for EdidR4DisplayRangeVideoTimingsCVTPixelClockDiff {
@@ -830,10 +866,12 @@ impl EdidR4DisplayRangeVideoTimingsCVTPixelClockDiff {
 
 #[derive(Clone, Debug, TypedBuilder)]
 #[builder(mutators(
+    #[allow(unreachable_pub)]
     pub fn supported_aspect_ratios(&mut self, ar: Vec<EdidR4DisplayRangeVideoTimingsAspectRatio>) {
         self.supported_aspect_ratios = ar;
     }
 
+    #[allow(unreachable_pub)]
     pub fn add_supported_aspect_ratio(&mut self, ar: EdidR4DisplayRangeVideoTimingsAspectRatio) {
         self.supported_aspect_ratios.push(ar);
     }
@@ -964,7 +1002,7 @@ impl IntoBytes for EdidR4DisplayRangeLimits {
                         )
                         .expect("Pixel Clock value would overflow our type")
                         .into_raw();
-                        let raw_max_pix = round_up(cvt.maximum_active_pixels_per_line, 8) / 8;
+                        let raw_max_pix = div_round_up(&cvt.maximum_active_pixels_per_line, &8);
                         let max_pix_hi = ((raw_max_pix >> 8) & 0x3) as u8;
                         let max_pix_lo = (raw_max_pix & 0xff) as u8;
 
@@ -1009,7 +1047,19 @@ impl IntoBytes for EdidR4DisplayRangeLimits {
             }
         };
 
+        let len = bytes.len();
+        assert_eq!(
+            len,
+            EDID_DESCRIPTOR_PAYLOAD_LEN + 1,
+            "Descriptor Payload is larger than it should ({len} vs expected {} bytes)",
+            EDID_DESCRIPTOR_PAYLOAD_LEN + 1
+        );
+
         bytes
+    }
+
+    fn size(&self) -> usize {
+        EDID_DESCRIPTOR_PAYLOAD_LEN + 1
     }
 }
 
@@ -1065,10 +1115,12 @@ pub enum EdidR4DescriptorEstablishedTimingsIII {
 
 #[derive(Clone, Debug, TypedBuilder)]
 #[builder(mutators(
+    #[allow(unreachable_pub)]
     pub fn established_timings(&mut self, et: Vec<EdidR4DescriptorEstablishedTimingsIII>) {
         self.established_timings = et;
     }
 
+    #[allow(unreachable_pub)]
     pub fn add_established_timing(&mut self, et: EdidR4DescriptorEstablishedTimingsIII) {
         self.established_timings.push(et);
     }
@@ -1095,7 +1147,17 @@ impl IntoBytes for EdidR4DescriptorEstablishedTimings {
         bytes.extend_from_slice(&array);
         bytes.extend_from_slice(&[0; 6]);
 
+        let len = bytes.len();
+        assert_eq!(
+            len, EDID_DESCRIPTOR_PAYLOAD_LEN,
+            "Descriptor Payload is larger than it should ({len} vs expected {EDID_DESCRIPTOR_PAYLOAD_LEN} bytes)",
+        );
+
         bytes
+    }
+
+    fn size(&self) -> usize {
+        EDID_DESCRIPTOR_PAYLOAD_LEN
     }
 }
 
@@ -1164,6 +1226,10 @@ impl IntoBytes for EdidR3Descriptor {
 
         bytes
     }
+
+    fn size(&self) -> usize {
+        EDID_DESCRIPTOR_LEN
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -1222,6 +1288,10 @@ impl IntoBytes for EdidR4Descriptor {
         );
 
         bytes
+    }
+
+    fn size(&self) -> usize {
+        EDID_DESCRIPTOR_LEN
     }
 }
 
@@ -1300,5 +1370,9 @@ impl IntoBytes for Vec<EdidDescriptor> {
         );
 
         bytes
+    }
+
+    fn size(&self) -> usize {
+        EDID_DESCRIPTOR_LEN * EDID_DESCRIPTORS_NUM
     }
 }

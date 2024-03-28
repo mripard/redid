@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+
 use core::{
     array,
     convert::{TryFrom, TryInto},
@@ -5,6 +7,7 @@ use core::{
 };
 
 use num_traits::ToPrimitive;
+use static_assertions::const_assert_eq;
 use typed_builder::TypedBuilder;
 
 mod descriptors;
@@ -12,9 +15,10 @@ mod descriptors;
 pub use descriptors::{
     EdidDescriptor, EdidDescriptor10BitsTiming, EdidDescriptor12BitsTiming,
     EdidDescriptor6BitsTiming, EdidDescriptor8BitsTiming, EdidDescriptorCustom,
-    EdidDescriptorDetailedTiming, EdidDescriptorString, EdidDetailedTimingAnalogSync,
-    EdidDetailedTimingDigitalCompositeSync, EdidDetailedTimingDigitalSeparateSync,
-    EdidDetailedTimingDigitalSync, EdidDetailedTimingDigitalSyncKind, EdidDetailedTimingSizeMm,
+    EdidDescriptorCustomPayload, EdidDescriptorCustomTag, EdidDescriptorDetailedTiming,
+    EdidDescriptorString, EdidDetailedTimingAnalogSync, EdidDetailedTimingDigitalCompositeSync,
+    EdidDetailedTimingDigitalSeparateSync, EdidDetailedTimingDigitalSync,
+    EdidDetailedTimingDigitalSyncKind, EdidDetailedTimingPixelClock, EdidDetailedTimingSizeMm,
     EdidDetailedTimingStereo, EdidDetailedTimingSync, EdidDisplayRangeHorizontalFreq,
     EdidDisplayRangePixelClock, EdidDisplayRangeVerticalFreq, EdidDisplayRangeVideoTimingsGTF,
     EdidDisplayRangeVideoTimingsGTFStartFrequency, EdidR3Descriptor, EdidR3DisplayRangeLimits,
@@ -22,18 +26,93 @@ pub use descriptors::{
     EdidR4DescriptorEstablishedTimingsIII, EdidR4DisplayRangeHorizontalFreq,
     EdidR4DisplayRangeLimits, EdidR4DisplayRangeVerticalFreq,
     EdidR4DisplayRangeVideoTimingsAspectRatio, EdidR4DisplayRangeVideoTimingsCVT,
-    EdidR4DisplayRangeVideoTimingsCVTR1, EdidR4DisplayRangeVideoTimingsSupport,
+    EdidR4DisplayRangeVideoTimingsCVTPixelClockDiff, EdidR4DisplayRangeVideoTimingsCVTR1,
+    EdidR4DisplayRangeVideoTimingsSupport,
 };
 
+mod extensions;
+
+pub use extensions::{
+    EdidExtension, EdidExtensionCTA861, EdidExtensionCTA861AudioDataBlock,
+    EdidExtensionCTA861AudioDataBlockChannels, EdidExtensionCTA861AudioDataBlockDesc,
+    EdidExtensionCTA861AudioDataBlockLPCM, EdidExtensionCTA861AudioDataBlockSamplingFrequency,
+    EdidExtensionCTA861AudioDataBlockSamplingRate, EdidExtensionCTA861HdmiDataBlock,
+    EdidExtensionCTA861Revision3, EdidExtensionCTA861Revision3DataBlock,
+    EdidExtensionCTA861SpeakerAllocationDataBlock, EdidExtensionCTA861VideoDataBlock,
+};
+
+mod utils;
+
 const EDID_BASE_LEN: usize = 128;
-const EDID_MANUFACTURER_LEN: usize = 3;
-const EDID_STD_TIMINGS_LEN: usize = 16;
+
+// It looks like const_assert! doesn't count as being used somehow.
+#[allow(dead_code)]
+const EDID_HEADER_LEN: usize = 8;
+
+// It looks like const_assert! doesn't count as being used somehow.
+#[allow(dead_code)]
+const EDID_IDENTIFICATION_LEN: usize = 10;
+const EDID_MANUFACTURER_LEN: usize = 2;
+const EDID_MANUFACTURER_CHAR_LEN: usize = 3;
+const EDID_PRODUCT_CODE_LEN: usize = 2;
+const EDID_SERIAL_NUMBER_LEN: usize = 4;
+const EDID_DATE_LEN: usize = 2;
+
+const_assert_eq!(
+    EDID_MANUFACTURER_LEN + EDID_PRODUCT_CODE_LEN + EDID_SERIAL_NUMBER_LEN + EDID_DATE_LEN,
+    EDID_IDENTIFICATION_LEN
+);
+
+// It looks like const_assert! doesn't count as being used somehow.
+#[allow(dead_code)]
+const EDID_VERSION_REVISION_LEN: usize = 2;
+
+const EDID_BASIC_DISPLAY_PARAMETERS_LEN: usize = 5;
+const EDID_INPUT_DEFINITION_LEN: usize = 1;
+const EDID_ASPECT_RATIO_LEN: usize = 2;
+const EDID_GAMMA_LEN: usize = 1;
+const EDID_FEATURE_LEN: usize = 1;
+
+const_assert_eq!(
+    EDID_INPUT_DEFINITION_LEN + EDID_ASPECT_RATIO_LEN + EDID_GAMMA_LEN + EDID_FEATURE_LEN,
+    EDID_BASIC_DISPLAY_PARAMETERS_LEN
+);
+
+const EDID_CHROMATICITY_COORDINATES_LEN: usize = 10;
+const EDID_ESTABLISHED_TIMINGS_LEN: usize = 3;
+const EDID_STANDARD_TIMINGS_LEN: usize = 16;
 const EDID_DESCRIPTOR_LEN: usize = 18;
 const EDID_DESCRIPTORS_NUM: usize = 4;
 const EDID_DESCRIPTOR_PAYLOAD_LEN: usize = 13;
 
+// It looks like const_assert! doesn't count as being used somehow.
+#[allow(dead_code)]
+const EDID_EXTENSION_NUM_LEN: usize = 1;
+
+// It looks like const_assert! doesn't count as being used somehow.
+#[allow(dead_code)]
+const EDID_CHECKSUM_LEN: usize = 1;
+
+const_assert_eq!(
+    EDID_HEADER_LEN
+        + EDID_IDENTIFICATION_LEN
+        + EDID_VERSION_REVISION_LEN
+        + EDID_BASIC_DISPLAY_PARAMETERS_LEN
+        + EDID_CHROMATICITY_COORDINATES_LEN
+        + EDID_ESTABLISHED_TIMINGS_LEN
+        + EDID_STANDARD_TIMINGS_LEN
+        + (EDID_DESCRIPTOR_LEN * EDID_DESCRIPTORS_NUM)
+        + EDID_EXTENSION_NUM_LEN
+        + EDID_CHECKSUM_LEN,
+    EDID_BASE_LEN
+);
+
 pub trait IntoBytes {
+    // Returns a serialized representation of the type. Must be of self.size() length.
     fn into_bytes(self) -> Vec<u8>;
+
+    // Returns the byte length of the serialized representation of this type.
+    fn size(&self) -> usize;
 }
 
 #[derive(Debug)]
@@ -95,7 +174,7 @@ enum EdidRelease {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct EdidManufacturer([u8; EDID_MANUFACTURER_LEN]);
+pub struct EdidManufacturer([u8; EDID_MANUFACTURER_CHAR_LEN]);
 
 impl TryFrom<&str> for EdidManufacturer {
     type Error = EdidTypeConversionError<String>;
@@ -113,7 +192,7 @@ impl TryFrom<&str> for EdidManufacturer {
             )));
         }
 
-        if value.len() != EDID_MANUFACTURER_LEN {
+        if value.len() != EDID_MANUFACTURER_CHAR_LEN {
             return Err(EdidTypeConversionError::Value(String::from(
                 "Manufacturer ID must be 3 characters long.",
             )));
@@ -125,7 +204,7 @@ impl TryFrom<&str> for EdidManufacturer {
 
 impl IntoBytes for EdidManufacturer {
     fn into_bytes(self) -> Vec<u8> {
-        let mut bytes = Vec::with_capacity(2);
+        let mut bytes = Vec::with_capacity(EDID_MANUFACTURER_LEN);
 
         let manufacturer = &self.0;
         let mut comp = (manufacturer[0] - b'@') << 2;
@@ -136,7 +215,17 @@ impl IntoBytes for EdidManufacturer {
         comp |= manufacturer[2] - b'@';
         bytes.push(comp);
 
+        let len = bytes.len();
+        assert_eq!(
+            len, EDID_MANUFACTURER_LEN,
+            "Manufacturer array is larger than it should ({len} vs expected {EDID_MANUFACTURER_LEN} bytes)",
+        );
+
         bytes
+    }
+
+    fn size(&self) -> usize {
+        EDID_MANUFACTURER_LEN
     }
 }
 
@@ -151,13 +240,23 @@ impl From<u16> for EdidProductCode {
 
 impl IntoBytes for EdidProductCode {
     fn into_bytes(self) -> Vec<u8> {
-        let mut bytes = Vec::with_capacity(2);
+        let mut bytes = Vec::with_capacity(EDID_PRODUCT_CODE_LEN);
 
         let prod = &self.0;
         bytes.push((prod & 0xff) as u8);
         bytes.push((prod >> 8) as u8);
 
+        let len = bytes.len();
+        assert_eq!(
+            len, EDID_PRODUCT_CODE_LEN,
+            "Product Code array is larger than it should ({len} vs expected {EDID_PRODUCT_CODE_LEN} bytes)",
+        );
+
         bytes
+    }
+
+    fn size(&self) -> usize {
+        EDID_PRODUCT_CODE_LEN
     }
 }
 
@@ -172,7 +271,7 @@ impl From<u32> for EdidSerialNumber {
 
 impl IntoBytes for EdidSerialNumber {
     fn into_bytes(self) -> Vec<u8> {
-        let mut bytes = Vec::with_capacity(4);
+        let mut bytes = Vec::with_capacity(EDID_SERIAL_NUMBER_LEN);
 
         let serial = &self.0;
         bytes.push((serial & 0xff) as u8);
@@ -180,7 +279,17 @@ impl IntoBytes for EdidSerialNumber {
         bytes.push(((serial >> 16) & 0xff) as u8);
         bytes.push(((serial >> 24) & 0xff) as u8);
 
+        let len = bytes.len();
+        assert_eq!(
+            len, EDID_SERIAL_NUMBER_LEN,
+            "Serial Number array is larger than it should ({len} vs expected {EDID_SERIAL_NUMBER_LEN} bytes)",
+        );
+
         bytes
+    }
+
+    fn size(&self) -> usize {
+        EDID_SERIAL_NUMBER_LEN
     }
 }
 
@@ -276,10 +385,25 @@ impl TryFrom<u16> for EdidManufactureDate {
 
 impl IntoBytes for EdidManufactureDate {
     fn into_bytes(self) -> Vec<u8> {
-        let week = if let Some(val) = self.0 { val.0 } else { 0 };
-        let year = u8::try_from(self.1 .0 - 1990).expect("Year would overflow our type.");
+        let mut bytes = Vec::with_capacity(EDID_DATE_LEN);
 
-        Vec::from(&[week, year])
+        let week = if let Some(val) = self.0 { val.0 } else { 0 };
+        bytes.push(week);
+
+        let year = u8::try_from(self.1 .0 - 1990).expect("Year would overflow our type.");
+        bytes.push(year);
+
+        let len = bytes.len();
+        assert_eq!(
+            len, EDID_DATE_LEN,
+            "Date array is larger than it should ({len} vs expected {EDID_DATE_LEN} bytes)",
+        );
+
+        bytes
+    }
+
+    fn size(&self) -> usize {
+        EDID_DATE_LEN
     }
 }
 
@@ -361,10 +485,25 @@ impl TryFrom<u16> for EdidR4ManufactureDate {
 
 impl IntoBytes for EdidR4ManufactureDate {
     fn into_bytes(self) -> Vec<u8> {
-        let week = if let Some(val) = self.0 { val.0 } else { 0 };
-        let year = u8::try_from(self.1 .0 - 1990).expect("Year would overflow our type.");
+        let mut bytes = Vec::with_capacity(EDID_DATE_LEN);
 
-        Vec::from(&[week, year])
+        let week = if let Some(val) = self.0 { val.0 } else { 0 };
+        bytes.push(week);
+
+        let year = u8::try_from(self.1 .0 - 1990).expect("Year would overflow our type.");
+        bytes.push(year);
+
+        let len = bytes.len();
+        assert_eq!(
+            len, EDID_DATE_LEN,
+            "Date array is larger than it should ({len} vs expected {EDID_DATE_LEN} bytes)",
+        );
+
+        bytes
+    }
+
+    fn size(&self) -> usize {
+        EDID_DATE_LEN
     }
 }
 
@@ -397,9 +536,24 @@ impl TryFrom<u16> for EdidR4ModelDate {
 
 impl IntoBytes for EdidR4ModelDate {
     fn into_bytes(self) -> Vec<u8> {
-        let year = u8::try_from(self.0 .0 - 1990).expect("Year would overflow our type.");
+        let mut bytes = Vec::with_capacity(EDID_DATE_LEN);
 
-        Vec::from(&[0xff, year])
+        bytes.push(0xff);
+
+        let year = u8::try_from(self.0 .0 - 1990).expect("Year would overflow our type.");
+        bytes.push(year);
+
+        let len = bytes.len();
+        assert_eq!(
+            len, EDID_DATE_LEN,
+            "Date array is larger than it should ({len} vs expected {EDID_DATE_LEN} bytes)",
+        );
+
+        bytes
+    }
+
+    fn size(&self) -> usize {
+        EDID_DATE_LEN
     }
 }
 
@@ -430,6 +584,13 @@ impl IntoBytes for EdidR4Date {
             EdidR4Date::Model(m) => m.into_bytes(),
         }
     }
+
+    fn size(&self) -> usize {
+        match self {
+            EdidR4Date::Manufacture(m) => m.size(),
+            EdidR4Date::Model(m) => m.size(),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -457,9 +618,25 @@ pub enum EdidDate {
 
 impl IntoBytes for EdidDate {
     fn into_bytes(self) -> Vec<u8> {
-        match self {
+        let bytes = match self {
             EdidDate::R3(v) => v.into_bytes(),
             EdidDate::R4(v) => v.into_bytes(),
+        };
+
+        let len = bytes.len();
+        let size = self.size();
+        assert_eq!(
+            len, size,
+            "Date array is larger than it should ({len} vs expected {size} bytes)",
+        );
+
+        bytes
+    }
+
+    fn size(&self) -> usize {
+        match self {
+            EdidDate::R3(v) => v.size(),
+            EdidDate::R4(v) => v.size(),
         }
     }
 }
@@ -547,7 +724,19 @@ impl IntoBytes for EdidAnalogVideoInputDefinition {
             byte |= 1 << 0;
         }
 
-        Vec::from(&[byte])
+        let bytes = Vec::from(&[byte]);
+
+        let len = bytes.len();
+        assert_eq!(
+            len, EDID_INPUT_DEFINITION_LEN,
+            "Video Input Definition array is larger than it should ({len} vs expected {EDID_INPUT_DEFINITION_LEN} bytes)",
+        );
+
+        bytes
+    }
+
+    fn size(&self) -> usize {
+        EDID_INPUT_DEFINITION_LEN
     }
 }
 
@@ -567,6 +756,10 @@ impl IntoBytes for EdidR3DigitalVideoInputDefinition {
 
         Vec::from(&[byte])
     }
+
+    fn size(&self) -> usize {
+        EDID_INPUT_DEFINITION_LEN
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -577,9 +770,25 @@ pub enum EdidR3VideoInputDefinition {
 
 impl IntoBytes for EdidR3VideoInputDefinition {
     fn into_bytes(self) -> Vec<u8> {
-        match self {
+        let bytes = match self {
             Self::Analog(v) => v.into_bytes(),
             Self::Digital(v) => v.into_bytes(),
+        };
+
+        let len = bytes.len();
+        let size = self.size();
+        assert_eq!(
+            len, size,
+            "Video Input Definition array is larger than it should ({len} vs expected {size} bytes)",
+        );
+
+        bytes
+    }
+
+    fn size(&self) -> usize {
+        match self {
+            EdidR3VideoInputDefinition::Analog(v) => v.size(),
+            EdidR3VideoInputDefinition::Digital(v) => v.size(),
         }
     }
 }
@@ -613,12 +822,22 @@ pub enum EdidR3ImageSize {
 
 impl IntoBytes for EdidR3ImageSize {
     fn into_bytes(self) -> Vec<u8> {
-        let bytes = match self {
+        let bytes = Vec::from(&match self {
             Self::Size(s) => [s.horizontal_cm.0, s.vertical_cm.0],
             Self::Undefined => [0x00, 0x00],
-        };
+        });
 
-        Vec::from(&bytes)
+        let len = bytes.len();
+        assert_eq!(
+            len, EDID_ASPECT_RATIO_LEN,
+            "Image Size array is larger than it should ({len} vs expected {EDID_ASPECT_RATIO_LEN} bytes)",
+        );
+
+        bytes
+    }
+
+    fn size(&self) -> usize {
+        EDID_ASPECT_RATIO_LEN
     }
 }
 
@@ -663,7 +882,18 @@ impl IntoBytes for EdidDisplayTransferCharacteristics {
             EdidDisplayTransferCharacteristics::DisplayInformationExtension(()) => 0xff,
         };
 
-        Vec::from(&[stored])
+        let bytes = Vec::from(&[stored]);
+        let len = bytes.len();
+        assert_eq!(
+            len, EDID_GAMMA_LEN,
+            "Display Transfer Characteristics array is larger than it should ({len} vs expected {EDID_GAMMA_LEN} bytes)",
+        );
+
+        bytes
+    }
+
+    fn size(&self) -> usize {
+        EDID_GAMMA_LEN
     }
 }
 
@@ -728,7 +958,18 @@ impl IntoBytes for EdidR3FeatureSupport {
             byte |= 1 << 0;
         }
 
-        Vec::from(&[byte])
+        let bytes = Vec::from(&[byte]);
+        let len = bytes.len();
+        assert_eq!(
+            len, EDID_FEATURE_LEN,
+            "Basic Features array is larger than it should ({len} vs expected {EDID_FEATURE_LEN} bytes)",
+        );
+
+        bytes
+    }
+
+    fn size(&self) -> usize {
+        EDID_FEATURE_LEN
     }
 }
 
@@ -745,14 +986,24 @@ pub struct EdidR3BasicDisplayParametersFeatures {
 
 impl IntoBytes for EdidR3BasicDisplayParametersFeatures {
     fn into_bytes(self) -> Vec<u8> {
-        let mut bytes = Vec::with_capacity(5);
+        let mut bytes = Vec::with_capacity(EDID_BASIC_DISPLAY_PARAMETERS_LEN);
 
         bytes.extend_from_slice(&self.video_input.into_bytes());
         bytes.extend_from_slice(&self.size.into_bytes());
         bytes.extend_from_slice(&self.display_transfer_characteristic.into_bytes());
         bytes.extend_from_slice(&self.feature_support.into_bytes());
 
+        let len = bytes.len();
+        assert_eq!(
+            len, EDID_BASIC_DISPLAY_PARAMETERS_LEN,
+            "Basic Features array is larger than it should ({len} vs expected {EDID_BASIC_DISPLAY_PARAMETERS_LEN} bytes)",
+        );
+
         bytes
+    }
+
+    fn size(&self) -> usize {
+        EDID_BASIC_DISPLAY_PARAMETERS_LEN
     }
 }
 
@@ -792,7 +1043,18 @@ impl IntoBytes for EdidR4DigitalVideoInputDefinition {
         byte |= (self.color_depth as u8) << 4;
         byte |= self.interface as u8;
 
-        Vec::from(&[byte])
+        let bytes = Vec::from(&[byte]);
+        let len = bytes.len();
+        assert_eq!(
+            len, EDID_INPUT_DEFINITION_LEN,
+            "Video Input Definition array is larger than it should ({len} vs expected {EDID_INPUT_DEFINITION_LEN} bytes)",
+        );
+
+        bytes
+    }
+
+    fn size(&self) -> usize {
+        EDID_INPUT_DEFINITION_LEN
     }
 }
 
@@ -804,9 +1066,25 @@ pub enum EdidR4VideoInputDefinition {
 
 impl IntoBytes for EdidR4VideoInputDefinition {
     fn into_bytes(self) -> Vec<u8> {
-        match self {
+        let bytes = match self {
             Self::Analog(v) => v.into_bytes(),
             Self::Digital(v) => v.into_bytes(),
+        };
+
+        let len = bytes.len();
+        let size = self.size();
+        assert_eq!(
+            len, size,
+            "Video Input Definition array is larger than it should ({len} vs expected {size} bytes)",
+        );
+
+        bytes
+    }
+
+    fn size(&self) -> usize {
+        match self {
+            EdidR4VideoInputDefinition::Analog(v) => v.size(),
+            EdidR4VideoInputDefinition::Digital(v) => v.size(),
         }
     }
 }
@@ -862,7 +1140,7 @@ pub enum EdidR4ImageSize {
 
 impl IntoBytes for EdidR4ImageSize {
     fn into_bytes(self) -> Vec<u8> {
-        let bytes = match self {
+        let bytes = Vec::from(&match self {
             Self::LandscapeRatio(r) => {
                 let ratio = f64::from(r.0) / f64::from(r.1);
                 let ratio_cent_int = (ratio * 100.0)
@@ -887,9 +1165,19 @@ impl IntoBytes for EdidR4ImageSize {
             }
             Self::Size(s) => [s.horizontal_cm.0, s.vertical_cm.0],
             Self::Undefined => [0x00, 0x00],
-        };
+        });
 
-        Vec::from(&bytes)
+        let len = bytes.len();
+        assert_eq!(
+            len, EDID_ASPECT_RATIO_LEN,
+            "Image Size array is larger than it should ({len} vs expected {EDID_ASPECT_RATIO_LEN} bytes)",
+        );
+
+        bytes
+    }
+
+    fn size(&self) -> usize {
+        EDID_ASPECT_RATIO_LEN
     }
 }
 
@@ -1014,7 +1302,18 @@ impl IntoBytes for EdidR4FeatureSupport {
             byte |= 1 << 0;
         }
 
-        Vec::from(&[byte])
+        let bytes = Vec::from(&[byte]);
+        let len = bytes.len();
+        assert_eq!(
+            len, EDID_FEATURE_LEN,
+            "Feature array is larger than it should ({len} vs expected {EDID_FEATURE_LEN} bytes)",
+        );
+
+        bytes
+    }
+
+    fn size(&self) -> usize {
+        EDID_FEATURE_LEN
     }
 }
 
@@ -1030,14 +1329,24 @@ pub struct EdidR4BasicDisplayParametersFeatures {
 
 impl IntoBytes for EdidR4BasicDisplayParametersFeatures {
     fn into_bytes(self) -> Vec<u8> {
-        let mut bytes = Vec::with_capacity(5);
+        let mut bytes = Vec::with_capacity(EDID_BASIC_DISPLAY_PARAMETERS_LEN);
 
         bytes.extend_from_slice(&self.video_input.into_bytes());
         bytes.extend_from_slice(&self.size.into_bytes());
         bytes.extend_from_slice(&self.display_transfer_characteristic.into_bytes());
         bytes.extend_from_slice(&self.feature_support.into_bytes());
 
+        let len = bytes.len();
+        assert_eq!(
+            len, EDID_BASIC_DISPLAY_PARAMETERS_LEN,
+            "Basic Display Parameters array is larger than it should ({len} vs expected {EDID_BASIC_DISPLAY_PARAMETERS_LEN} bytes)",
+        );
+
         bytes
+    }
+
+    fn size(&self) -> usize {
+        EDID_BASIC_DISPLAY_PARAMETERS_LEN
     }
 }
 
@@ -1049,9 +1358,25 @@ pub enum EdidBasicDisplayParametersFeatures {
 
 impl IntoBytes for EdidBasicDisplayParametersFeatures {
     fn into_bytes(self) -> Vec<u8> {
-        match self {
+        let bytes = match self {
             Self::R3(v) => v.into_bytes(),
             Self::R4(v) => v.into_bytes(),
+        };
+
+        let len = bytes.len();
+        let size = self.size();
+        assert_eq!(
+            len, size,
+            "Basic Display Parameters array is larger than it should ({len} vs expected {size} bytes)",
+        );
+
+        bytes
+    }
+
+    fn size(&self) -> usize {
+        match self {
+            EdidBasicDisplayParametersFeatures::R3(v) => v.size(),
+            EdidBasicDisplayParametersFeatures::R4(v) => v.size(),
         }
     }
 }
@@ -1074,9 +1399,9 @@ mod test_chromaticity_coordinate {
 
     #[test]
     fn test_binary_spec() {
-        assert_eq!(EdidChromaticityCoordinate(0.610).into_raw(), 0b1001110001);
-        assert_eq!(EdidChromaticityCoordinate(0.307).into_raw(), 0b0100111010);
-        assert_eq!(EdidChromaticityCoordinate(0.150).into_raw(), 0b0010011010);
+        assert_eq!(EdidChromaticityCoordinate(0.610).into_raw(), 0b10_0111_0001);
+        assert_eq!(EdidChromaticityCoordinate(0.307).into_raw(), 0b01_0011_1010);
+        assert_eq!(EdidChromaticityCoordinate(0.150).into_raw(), 0b00_1001_1010);
     }
 }
 
@@ -1115,6 +1440,7 @@ pub struct EdidChromaticityPoints {
     blue: EdidChromaticityPoint,
 }
 
+#[allow(variant_size_differences)]
 #[derive(Clone, Copy, Debug)]
 pub enum EdidFilterChromaticity {
     // FIXME: This must be consistent with EdidDisplayColorType.
@@ -1191,7 +1517,18 @@ impl IntoBytes for EdidFilterChromaticity {
             }
         };
 
-        Vec::from(&bytes)
+        let bytes = Vec::from(&bytes);
+        let len = bytes.len();
+        assert_eq!(
+            len, EDID_CHROMATICITY_COORDINATES_LEN,
+            "Basic Display Parameters array is larger than it should ({len} vs expected {EDID_CHROMATICITY_COORDINATES_LEN} bytes)",
+        );
+
+        bytes
+    }
+
+    fn size(&self) -> usize {
+        EDID_CHROMATICITY_COORDINATES_LEN
     }
 }
 
@@ -1258,7 +1595,18 @@ impl IntoBytes for Vec<EdidEstablishedTiming> {
             };
         }
 
-        Vec::from(&[byte0, byte1, byte2])
+        let bytes = Vec::from(&[byte0, byte1, byte2]);
+        let len = bytes.len();
+        assert_eq!(
+            len, EDID_ESTABLISHED_TIMINGS_LEN,
+            "Established Timings array is larger than it should ({len} vs expected {EDID_ESTABLISHED_TIMINGS_LEN} bytes)",
+        );
+
+        bytes
+    }
+
+    fn size(&self) -> usize {
+        EDID_ESTABLISHED_TIMINGS_LEN
     }
 }
 
@@ -1317,7 +1665,7 @@ pub struct EdidStandardTiming {
 
 impl IntoBytes for Vec<EdidStandardTiming> {
     fn into_bytes(self) -> Vec<u8> {
-        let mut bytes = Vec::with_capacity(EDID_STD_TIMINGS_LEN);
+        let mut bytes = Vec::with_capacity(EDID_STANDARD_TIMINGS_LEN);
 
         for st_idx in 0..8 {
             let st = self.get(st_idx);
@@ -1343,12 +1691,15 @@ impl IntoBytes for Vec<EdidStandardTiming> {
 
         let len = bytes.len();
         assert_eq!(
-            len, EDID_STD_TIMINGS_LEN,
-            "Standard timings array is larger than it should ({} vs expected {} bytes",
-            len, EDID_STD_TIMINGS_LEN
+            len, EDID_STANDARD_TIMINGS_LEN,
+            "Standard timings array is larger than it should ({len} vs expected {EDID_STANDARD_TIMINGS_LEN} bytes)",
         );
 
         bytes
+    }
+
+    fn size(&self) -> usize {
+        EDID_STANDARD_TIMINGS_LEN
     }
 }
 
@@ -1385,6 +1736,7 @@ struct Edid {
     established_timings: Vec<EdidEstablishedTiming>,
     standard_timings: Vec<EdidStandardTiming>,
     descriptors: Vec<EdidDescriptor>,
+    extensions: Vec<EdidExtension>,
 }
 
 impl IntoBytes for Edid {
@@ -1416,8 +1768,12 @@ impl IntoBytes for Edid {
         bytes.extend_from_slice(&self.standard_timings.into_bytes());
         bytes.extend_from_slice(&self.descriptors.into_bytes());
 
-        // FIXME: Support the extensions
-        bytes.push(0);
+        let num_exts = self
+            .extensions
+            .len()
+            .to_u8()
+            .expect("Number of extensions would overflow our type.");
+        bytes.push(num_exts);
 
         let mut sum: u8 = 0;
         for byte in &bytes {
@@ -1427,14 +1783,22 @@ impl IntoBytes for Edid {
         let checksum = 0u8.wrapping_sub(sum);
         bytes.push(checksum);
 
+        for ext in self.extensions {
+            bytes.extend_from_slice(&ext.into_bytes());
+        }
+
         assert_eq!(
-            bytes.len(),
-            EDID_BASE_LEN,
-            "EDID is larger than it should ({} vs expected {} bytes",
-            bytes.len(),
-            EDID_BASE_LEN
+            bytes.len() % EDID_BASE_LEN,
+            0,
+            "EDID must be {EDID_BASE_LEN} bytes aligned (actual size {})",
+            bytes.len()
         );
+
         bytes
+    }
+
+    fn size(&self) -> usize {
+        EDID_BASE_LEN
     }
 }
 
@@ -1451,6 +1815,7 @@ impl From<EdidRelease3> for Edid {
             established_timings: value.established_timings,
             standard_timings: value.standard_timings,
             descriptors: value.descriptors,
+            extensions: value.extensions,
         }
     }
 }
@@ -1468,34 +1833,51 @@ impl From<EdidRelease4> for Edid {
             established_timings: value.established_timings,
             standard_timings: value.standard_timings,
             descriptors: value.descriptors,
+            extensions: value.extensions,
         }
     }
 }
 
 #[derive(Clone, Debug, TypedBuilder)]
 #[builder(mutators(
+    #[allow(unreachable_pub)]
     pub fn descriptors(&mut self, d: Vec<EdidR3Descriptor>) {
         self.descriptors = d.into_iter().map(EdidDescriptor::R3).collect();
     }
 
+    #[allow(unreachable_pub)]
     pub fn add_descriptor(&mut self, d: EdidR3Descriptor) {
         self.descriptors.push(EdidDescriptor::R3(d));
     }
 
+    #[allow(unreachable_pub)]
     pub fn established_timings(&mut self, et: Vec<EdidEstablishedTiming>) {
         self.established_timings = et;
     }
 
+    #[allow(unreachable_pub)]
     pub fn add_established_timing(&mut self, et: EdidEstablishedTiming) {
         self.established_timings.push(et);
     }
 
+    #[allow(unreachable_pub)]
     pub fn standard_timings(&mut self, st: Vec<EdidStandardTiming>) {
         self.standard_timings = st;
     }
 
+    #[allow(unreachable_pub)]
     pub fn add_standard_timing(&mut self, st: EdidStandardTiming) {
         self.standard_timings.push(st);
+    }
+
+    #[allow(unreachable_pub)]
+    pub fn extensions(&mut self, ext: Vec<EdidExtension>) {
+        self.extensions = ext;
+    }
+
+    #[allow(unreachable_pub)]
+    pub fn add_extension(&mut self, ext: EdidExtension) {
+        self.extensions.push(ext);
     }
 ))]
 pub struct EdidRelease3 {
@@ -1522,38 +1904,69 @@ pub struct EdidRelease3 {
     // FIXME: Display Range Limits is mandatory
     #[builder(via_mutators)]
     descriptors: Vec<EdidDescriptor>,
+
+    #[builder(via_mutators)]
+    extensions: Vec<EdidExtension>,
 }
 
 impl IntoBytes for EdidRelease3 {
     fn into_bytes(self) -> Vec<u8> {
-        Edid::from(self).into_bytes()
+        let bytes = Edid::from(self).into_bytes();
+
+        let len = bytes.len();
+        assert_eq!(
+            len, EDID_BASE_LEN,
+            "EDID is larger than it should ({len} vs expected {EDID_BASE_LEN} bytes)",
+        );
+
+        bytes
+    }
+
+    fn size(&self) -> usize {
+        EDID_BASE_LEN
     }
 }
 
 #[derive(Clone, Debug, TypedBuilder)]
 #[builder(mutators(
+    #[allow(unreachable_pub)]
     pub fn descriptors(&mut self, d: Vec<EdidR4Descriptor>) {
         self.descriptors = d.into_iter().map(EdidDescriptor::R4).collect();
     }
 
+    #[allow(unreachable_pub)]
     pub fn add_descriptor(&mut self, d: EdidR4Descriptor) {
         self.descriptors.push(EdidDescriptor::R4(d));
     }
 
+    #[allow(unreachable_pub)]
     pub fn established_timings(&mut self, et: Vec<EdidEstablishedTiming>) {
         self.established_timings = et;
     }
 
+    #[allow(unreachable_pub)]
     pub fn add_established_timing(&mut self, et: EdidEstablishedTiming) {
         self.established_timings.push(et);
     }
 
+    #[allow(unreachable_pub)]
     pub fn standard_timings(&mut self, st: Vec<EdidStandardTiming>) {
         self.standard_timings = st;
     }
 
+    #[allow(unreachable_pub)]
     pub fn add_standard_timing(&mut self, st: EdidStandardTiming) {
         self.standard_timings.push(st);
+    }
+
+    #[allow(unreachable_pub)]
+    pub fn extensions(&mut self, ext: Vec<EdidExtension>) {
+        self.extensions = ext;
+    }
+
+    #[allow(unreachable_pub)]
+    pub fn add_extension(&mut self, ext: EdidExtension) {
+        self.extensions.push(ext);
     }
 ))]
 pub struct EdidRelease4 {
@@ -1579,11 +1992,26 @@ pub struct EdidRelease4 {
     // FIXME: If continuous frequency, a display range limits descriptor is required
     #[builder(via_mutators)]
     descriptors: Vec<EdidDescriptor>,
+
+    #[builder(via_mutators)]
+    extensions: Vec<EdidExtension>,
 }
 
 impl IntoBytes for EdidRelease4 {
     fn into_bytes(self) -> Vec<u8> {
-        Edid::from(self).into_bytes()
+        let bytes = Edid::from(self).into_bytes();
+
+        let len = bytes.len();
+        assert_eq!(
+            len, EDID_BASE_LEN,
+            "EDID is larger than it should ({len} vs expected {EDID_BASE_LEN} bytes)",
+        );
+
+        bytes
+    }
+
+    fn size(&self) -> usize {
+        EDID_BASE_LEN
     }
 }
 

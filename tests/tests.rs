@@ -1416,6 +1416,21 @@ fn decode_and_check_edid(json: &Value, expected: &[u8]) {
     }
 }
 
+fn compare_unordered_slots<const CHUNK: usize, const LEN: usize>(
+    val: &[u8; LEN],
+    expected: &[u8; LEN],
+) -> bool {
+    assert!((LEN % CHUNK) == 0);
+
+    let mut val_chunks: Vec<_> = val.chunks_exact(CHUNK).collect();
+    val_chunks.sort();
+
+    let mut expected_chunks: Vec<_> = expected.chunks_exact(CHUNK).collect();
+    expected_chunks.sort();
+
+    val_chunks == expected_chunks
+}
+
 fn edid_equals(current: &[u8], expected: &[u8]) -> bool {
     let mut checksum_offset = [0; 2];
 
@@ -1429,11 +1444,14 @@ fn edid_equals(current: &[u8], expected: &[u8]) -> bool {
         return false;
     }
 
-    for i in 0..0x80 {
+    for i in 0..expected.len() {
         if current[i] == expected[i] {
             continue;
         }
 
+        // The lower bit of Stereo Viewing Support in a Detailed Timing (Bit 0 of Byte 17) can be
+        // set either to 0 or 1. Most of the EDIDs in the wild will set it to 0, and that's what
+        // we do too but some set it to 1, so we need to consider both equivalents.
         if (i > 0x36) && ((i - 0x36) % 18) == 17 {
             let diff = (current[i] ^ expected[i]) & 0x61;
 
@@ -1444,25 +1462,12 @@ fn edid_equals(current: &[u8], expected: &[u8]) -> bool {
             }
         }
 
-        if i >= 0x26 && i < 0x36 {
-            let mut st1 = [0; 16];
-            st1.copy_from_slice(&current[0x26..0x36]);
-            st1.sort();
-
-            let mut st2 = [0; 16];
-            st2.copy_from_slice(&expected[0x26..0x36]);
-            st2.sort();
-
-            if st1 == st2 {
-                continue;
-            }
-        }
-
-        // We don't support extensions just yet. Ignore it,
-        // and account for that difference in the checksum
-        if i == 0x7e {
-            checksum_offset[0] += current[i];
-            checksum_offset[1] += expected[i];
+        // The standard timings do not have to be packed at the beginning but can be in any order.
+        // Make sure the list of the stantard timings is equal no matter the order.
+        if compare_unordered_slots::<2, 16>(
+            &current[0x26..0x36].try_into().unwrap(),
+            &expected[0x26..0x36].try_into().unwrap(),
+        ) {
             continue;
         }
 
