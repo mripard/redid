@@ -1,10 +1,29 @@
-#![allow(missing_docs)]
+// Copyright 2020-2024, Maxime Ripard
+// Licensed under the MIT License
+// See the LICENSE file or <http://opensource.org/licenses/MIT>
 
-use core::{
-    array,
-    convert::{TryFrom, TryInto},
-    fmt, num,
-};
+// FIXME: Write all the doc
+#![allow(missing_docs)]
+#![cfg_attr(
+    feature = "nightly",
+    feature(
+        type_privacy_lints,
+        non_exhaustive_omitted_patterns_lint,
+        strict_provenance
+    )
+)]
+#![cfg_attr(
+    feature = "nightly",
+    warn(
+        fuzzy_provenance_casts,
+        lossy_provenance_casts,
+        unnameable_types,
+        non_exhaustive_omitted_patterns,
+    )
+)]
+#![doc = include_str!("../README.md")]
+
+use core::{array, fmt, num};
 
 use num_traits::ToPrimitive;
 use static_assertions::const_assert_eq;
@@ -16,15 +35,15 @@ pub use descriptors::{
     EdidDescriptor, EdidDescriptor10BitsTiming, EdidDescriptor12BitsTiming,
     EdidDescriptor6BitsTiming, EdidDescriptor8BitsTiming, EdidDescriptorCustom,
     EdidDescriptorCustomPayload, EdidDescriptorCustomTag, EdidDescriptorDetailedTiming,
-    EdidDescriptorString, EdidDetailedTimingAnalogSync, EdidDetailedTimingDigitalCompositeSync,
-    EdidDetailedTimingDigitalSeparateSync, EdidDetailedTimingDigitalSync,
-    EdidDetailedTimingDigitalSyncKind, EdidDetailedTimingPixelClock, EdidDetailedTimingSizeMm,
-    EdidDetailedTimingStereo, EdidDetailedTimingSync, EdidDisplayRangeHorizontalFreq,
-    EdidDisplayRangePixelClock, EdidDisplayRangeVerticalFreq, EdidDisplayRangeVideoTimingsGTF,
-    EdidDisplayRangeVideoTimingsGTFStartFrequency, EdidR3Descriptor, EdidR3DisplayRangeLimits,
-    EdidR3DisplayRangeVideoTimingsSupport, EdidR4Descriptor, EdidR4DescriptorEstablishedTimings,
-    EdidR4DescriptorEstablishedTimingsIII, EdidR4DisplayRangeHorizontalFreq,
-    EdidR4DisplayRangeLimits, EdidR4DisplayRangeVerticalFreq,
+    EdidDescriptorString, EdidDescriptorTiming, EdidDetailedTimingAnalogSync,
+    EdidDetailedTimingDigitalCompositeSync, EdidDetailedTimingDigitalSeparateSync,
+    EdidDetailedTimingDigitalSync, EdidDetailedTimingDigitalSyncKind, EdidDetailedTimingPixelClock,
+    EdidDetailedTimingSizeMm, EdidDetailedTimingStereo, EdidDetailedTimingSync,
+    EdidDisplayRangeHorizontalFreq, EdidDisplayRangePixelClock, EdidDisplayRangeVerticalFreq,
+    EdidDisplayRangeVideoTimingsGTF, EdidDisplayRangeVideoTimingsGTFStartFrequency,
+    EdidR3Descriptor, EdidR3DisplayRangeLimits, EdidR3DisplayRangeVideoTimingsSupport,
+    EdidR4Descriptor, EdidR4DescriptorEstablishedTimings, EdidR4DescriptorEstablishedTimingsIII,
+    EdidR4DisplayRangeHorizontalFreq, EdidR4DisplayRangeLimits, EdidR4DisplayRangeVerticalFreq,
     EdidR4DisplayRangeVideoTimingsAspectRatio, EdidR4DisplayRangeVideoTimingsCVT,
     EdidR4DisplayRangeVideoTimingsCVTPixelClockDiff, EdidR4DisplayRangeVideoTimingsCVTR1,
     EdidR4DisplayRangeVideoTimingsSupport,
@@ -33,12 +52,16 @@ pub use descriptors::{
 mod extensions;
 
 pub use extensions::{
-    EdidExtension, EdidExtensionCTA861, EdidExtensionCTA861AudioDataBlock,
+    CecAddress, EdidExtension, EdidExtensionCTA861, EdidExtensionCTA861AudioDataBlock,
     EdidExtensionCTA861AudioDataBlockChannels, EdidExtensionCTA861AudioDataBlockDesc,
     EdidExtensionCTA861AudioDataBlockLPCM, EdidExtensionCTA861AudioDataBlockSamplingFrequency,
-    EdidExtensionCTA861AudioDataBlockSamplingRate, EdidExtensionCTA861HdmiDataBlock,
-    EdidExtensionCTA861Revision3, EdidExtensionCTA861Revision3DataBlock,
-    EdidExtensionCTA861SpeakerAllocationDataBlock, EdidExtensionCTA861VideoDataBlock,
+    EdidExtensionCTA861AudioDataBlockSamplingRate, EdidExtensionCTA861ColorimetryDataBlock,
+    EdidExtensionCTA861Hdmi14bDataBlockVideo, EdidExtensionCTA861Hdmi14bTmdsRate,
+    EdidExtensionCTA861HdmiDataBlock, EdidExtensionCTA861Revision3,
+    EdidExtensionCTA861Revision3DataBlock, EdidExtensionCTA861SpeakerAllocationDataBlock,
+    EdidExtensionCTA861VideoCapabilityDataBlock, EdidExtensionCTA861VideoCapabilityQuantization,
+    EdidExtensionCTA861VideoCapabilityScanBehavior, EdidExtensionCTA861VideoDataBlock,
+    EdidExtensionCTA861VideoDataBlockDesc,
 };
 
 mod utils;
@@ -2273,8 +2296,8 @@ mod test_edid_release4 {
                 // -------------------------- Extension Flag -------------------------------------
                 0x00,
                 // ----------------------------- Checksum ----------------------------------------
-                // The checksum isn't valid in the example either. It should be 0x9a, and since some
-                // part of the EDID were wrong it's further modified.
+                // The checksum isn't valid in the example either. It should be 0x9a, and since
+                // some part of the EDID were wrong it's further modified.
                 0x92,
             ]
         );

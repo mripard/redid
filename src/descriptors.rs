@@ -1,8 +1,4 @@
-use core::{
-    cmp,
-    convert::{TryFrom, TryInto},
-    fmt,
-};
+use core::{cmp, fmt};
 
 use encoding::{all::ISO_8859_1, EncoderTrap, Encoding};
 use num_traits::{Bounded, CheckedShl, Num, ToPrimitive, WrappingSub};
@@ -668,8 +664,6 @@ impl TryFrom<u16> for EdidDisplayRangePixelClock {
 
 #[cfg(test)]
 mod test_descriptor_display_range_pixel_clock {
-    use std::convert::TryFrom;
-
     use super::EdidDisplayRangePixelClock;
 
     #[test]
@@ -1298,7 +1292,6 @@ impl IntoBytes for EdidR4Descriptor {
 #[cfg(test)]
 mod tests {
     use crate::{EdidR4Descriptor, IntoBytes};
-    use std::convert::TryInto;
 
     #[test]
     fn test_descriptor_product_name_spec() {
