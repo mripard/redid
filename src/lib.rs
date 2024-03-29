@@ -7,11 +7,7 @@
 
 #![doc = include_str!("../README.md")]
 
-use core::{
-    array,
-    convert::{TryFrom, TryInto},
-    fmt, num,
-};
+use core::{array, fmt, num};
 
 use num_traits::ToPrimitive;
 use static_assertions::const_assert_eq;
