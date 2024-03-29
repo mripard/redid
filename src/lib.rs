@@ -2280,8 +2280,8 @@ mod test_edid_release4 {
                 // -------------------------- Extension Flag -------------------------------------
                 0x00,
                 // ----------------------------- Checksum ----------------------------------------
-                // The checksum isn't valid in the example either. It should be 0x9a, and since some
-                // part of the EDID were wrong it's further modified.
+                // The checksum isn't valid in the example either. It should be 0x9a, and since
+                // some part of the EDID were wrong it's further modified.
                 0x92,
             ]
         );
