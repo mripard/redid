@@ -1,3 +1,7 @@
+// Copyright 2020-2024, Maxime Ripard
+// Licensed under the MIT License
+// See the LICENSE file or <http://opensource.org/licenses/MIT>
+
 #![allow(missing_docs)]
 
 use core::{
