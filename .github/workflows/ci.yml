@@ -47,6 +47,13 @@ jobs:
           command: build
           args: ${{ matrix.toolchain == 'nightly' && '--all-features' || '' }} --all-targets --verbose
 
+      - name: Check for unused dependencies
+        uses: aig787/cargo-udeps-action@v1
+        if: matrix.toolchain == 'nightly'
+        with:
+          version: latest
+          args: --all-targets
+
       - name: Run Tests
         uses: "actions-rs/cargo@v1"
         with:
