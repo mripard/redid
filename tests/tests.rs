@@ -1,8 +1,14 @@
-use std::{fs::File, io::Read, process::Command, str::FromStr};
+use std::{
+    fs::File,
+    io::Read,
+    path::{Path, PathBuf},
+    process::Command,
+    str::FromStr,
+};
 
 use num_traits::ToPrimitive;
+use rstest::rstest;
 use serde_json::Value;
-use test_generator::test_resources;
 
 use redid::{
     EdidAnalogSignalLevelStandard, EdidAnalogVideoInputDefinition, EdidAnalogVideoSetup,
@@ -1490,7 +1496,7 @@ fn edid_equals(current: &[u8], expected: &[u8]) -> bool {
     true
 }
 
-fn test_edid(edid: &str) {
+fn test_edid(edid: &Path) {
     let output = Command::new("tests/tools/edid-chamelium/edid2json.py")
         .arg(edid)
         .output()
@@ -1510,12 +1516,12 @@ fn test_edid(edid: &str) {
     decode_and_check_edid(&json, &input_data);
 }
 
-#[test_resources("tests/edid-db/edid.tv/*.bin")]
-fn test_edidtv(edid: &str) {
-    test_edid(edid)
+#[rstest]
+fn test_edidtv(#[files("tests/edid-db/edid.tv/*.bin")] edid: PathBuf) {
+    test_edid(&edid)
 }
 
-#[test_resources("tests/edid-db/linuxhw/*.bin")]
-fn test_linuxhw(edid: &str) {
-    test_edid(edid)
+#[rstest]
+fn test_linuxhw(#[files("tests/edid-db/linuxhw/*.bin")] edid: PathBuf) {
+    test_edid(&edid)
 }
