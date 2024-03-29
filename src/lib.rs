@@ -2,6 +2,7 @@
 // Licensed under the MIT License
 // See the LICENSE file or <http://opensource.org/licenses/MIT>
 
+// FIXME: Write all the doc
 #![allow(missing_docs)]
 
 use core::{
