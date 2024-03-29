@@ -5,6 +5,8 @@
 // FIXME: Write all the doc
 #![allow(missing_docs)]
 
+#![doc = include_str!("../README.md")]
+
 use core::{
     array,
     convert::{TryFrom, TryInto},
