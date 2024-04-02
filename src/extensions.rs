@@ -288,6 +288,7 @@ impl IntoBytes for EdidExtensionCTA861SpeakerAllocationDataBlock {
 }
 
 #[derive(Clone, Copy, Debug, TypedBuilder)]
+#[builder(field_defaults(default))]
 pub struct EdidExtensionCTA861ColorimetryDataBlock {
     xv_ycc_601: bool,
     xv_ycc_709: bool,
