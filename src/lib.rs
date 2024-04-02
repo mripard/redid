@@ -1938,8 +1938,9 @@ impl IntoBytes for EdidRelease3 {
 
         let len = bytes.len();
         assert_eq!(
-            len, EDID_BASE_LEN,
-            "EDID is larger than it should ({len} vs expected {EDID_BASE_LEN} bytes)",
+            len % EDID_BASE_LEN,
+            0,
+            "EDID must be {EDID_BASE_LEN} bytes aligned (actual size {len})"
         );
 
         bytes
@@ -2026,8 +2027,9 @@ impl IntoBytes for EdidRelease4 {
 
         let len = bytes.len();
         assert_eq!(
-            len, EDID_BASE_LEN,
-            "EDID is larger than it should ({len} vs expected {EDID_BASE_LEN} bytes)",
+            len % EDID_BASE_LEN,
+            0,
+            "EDID must be {EDID_BASE_LEN} bytes aligned (actual size {len})"
         );
 
         bytes
