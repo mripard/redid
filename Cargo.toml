@@ -14,7 +14,7 @@ repository = "https://github.com/mripard/redid/"
 encoding = "0.2.33"
 num-traits = "0.2.17"
 static_assertions = "1.1.0"
-typed-builder = "0.18.1"
+typed-builder = "0.19.1"
 
 [dev-dependencies]
 rstest = { version = "0.21.0", default-features = false }
