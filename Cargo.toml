@@ -11,6 +11,7 @@ categories = ["encoding", "graphics", "hardware-support"]
 repository = "https://github.com/mripard/redid/"
 
 [dependencies]
+bon = "3.6.4"
 encoding = "0.2.33"
 num-traits = "0.2.17"
 static_assertions = "1.1.0"

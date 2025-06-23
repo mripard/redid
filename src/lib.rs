@@ -60,6 +60,8 @@ pub use extensions::{
     EdidExtensionCTA861VideoDataBlockDesc,
 };
 
+pub mod hdmi;
+
 mod utils;
 
 const EDID_BASE_LEN: usize = 128;
