@@ -457,26 +457,31 @@ mod test_edid_detailed_timings_size {
 }
 
 #[derive(Clone, Copy, Debug, TypedBuilder)]
+pub struct EdidDescriptorDetailedTimingHorizontal {
+    active: EdidDescriptor12BitsTiming,
+    blanking: EdidDescriptor12BitsTiming,
+    front_porch: EdidDescriptor10BitsTiming,
+    sync_pulse: EdidDescriptor10BitsTiming,
+    border: EdidDescriptor8BitsTiming,
+    size: EdidDetailedTimingSizeMm,
+}
+
+#[derive(Clone, Copy, Debug, TypedBuilder)]
+pub struct EdidDescriptorDetailedTimingVertical {
+    active: EdidDescriptor12BitsTiming,
+    blanking: EdidDescriptor12BitsTiming,
+    front_porch: EdidDescriptor6BitsTiming,
+    sync_pulse: EdidDescriptor6BitsTiming,
+    border: EdidDescriptor8BitsTiming,
+    size: EdidDetailedTimingSizeMm,
+}
+
+#[derive(Clone, Copy, Debug, TypedBuilder)]
 pub struct EdidDescriptorDetailedTiming {
     pixel_clock: EdidDetailedTimingPixelClock,
 
-    horizontal_addressable: EdidDescriptor12BitsTiming,
-    horizontal_blanking: EdidDescriptor12BitsTiming,
-
-    vertical_addressable: EdidDescriptor12BitsTiming,
-    vertical_blanking: EdidDescriptor12BitsTiming,
-
-    horizontal_front_porch: EdidDescriptor10BitsTiming,
-    horizontal_sync_pulse: EdidDescriptor10BitsTiming,
-
-    vertical_front_porch: EdidDescriptor6BitsTiming,
-    vertical_sync_pulse: EdidDescriptor6BitsTiming,
-
-    horizontal_size: EdidDetailedTimingSizeMm,
-    vertical_size: EdidDetailedTimingSizeMm,
-
-    horizontal_border: EdidDescriptor8BitsTiming,
-    vertical_border: EdidDescriptor8BitsTiming,
+    horizontal: EdidDescriptorDetailedTimingHorizontal,
+    vertical: EdidDescriptorDetailedTimingVertical,
 
     #[builder(default)]
     interlace: bool,
@@ -496,39 +501,39 @@ impl IntoBytes for EdidDescriptorDetailedTiming {
 
         data.extend_from_slice(&[lo_freq, hi_freq]);
 
-        let haddr = self.horizontal_addressable.into_raw();
+        let haddr = self.horizontal.active.into_raw();
         let haddr_lo = (haddr & 0xff) as u8;
         let haddr_hi = ((haddr >> 8) & 0xf) as u8;
 
-        let hblank = self.horizontal_blanking.into_raw();
+        let hblank = self.horizontal.blanking.into_raw();
         let hblank_lo = (hblank & 0xff) as u8;
         let hblank_hi = ((hblank >> 8) & 0xf) as u8;
 
         data.extend_from_slice(&[haddr_lo, hblank_lo, (haddr_hi << 4) | hblank_hi]);
 
-        let vaddr = self.vertical_addressable.into_raw();
+        let vaddr = self.vertical.active.into_raw();
         let vaddr_lo = (vaddr & 0xff) as u8;
         let vaddr_hi = ((vaddr >> 8) & 0xf) as u8;
 
-        let vblank = self.vertical_blanking.into_raw();
+        let vblank = self.vertical.blanking.into_raw();
         let vblank_lo = (vblank & 0xff) as u8;
         let vblank_hi = ((vblank >> 8) & 0xf) as u8;
 
         data.extend_from_slice(&[vaddr_lo, vblank_lo, (vaddr_hi << 4) | vblank_hi]);
 
-        let hfp = self.horizontal_front_porch.into_raw();
+        let hfp = self.horizontal.front_porch.into_raw();
         let hfp_lo = (hfp & 0xff) as u8;
         let hfp_hi = ((hfp >> 8) & 0x3) as u8;
 
-        let hsync = self.horizontal_sync_pulse.into_raw();
+        let hsync = self.horizontal.sync_pulse.into_raw();
         let hsync_lo = (hsync & 0xff) as u8;
         let hsync_hi = ((hsync >> 8) & 0x3) as u8;
 
-        let vfp = self.vertical_front_porch.into_raw();
+        let vfp = self.vertical.front_porch.into_raw();
         let vfp_lo = vfp & 0xf;
         let vfp_hi = (vfp >> 4) & 0x3;
 
-        let vsync = self.vertical_sync_pulse.into_raw();
+        let vsync = self.vertical.sync_pulse.into_raw();
         let vsync_lo = vsync & 0xf;
         let vsync_hi = (vsync >> 4) & 0x3;
 
@@ -539,11 +544,11 @@ impl IntoBytes for EdidDescriptorDetailedTiming {
             (hfp_hi << 6) | (hsync_hi << 4) | (vfp_hi << 2) | vsync_hi,
         ]);
 
-        let hsize = self.horizontal_size.into_raw();
+        let hsize = self.horizontal.size.into_raw();
         let hsize_lo = (hsize & 0xff) as u8;
         let hsize_hi = ((hsize >> 8) & 0xf) as u8;
 
-        let vsize = self.vertical_size.into_raw();
+        let vsize = self.vertical.size.into_raw();
         let vsize_lo = (vsize & 0xff) as u8;
         let vsize_hi = ((vsize >> 8) & 0xf) as u8;
 
@@ -615,8 +620,8 @@ impl IntoBytes for EdidDescriptorDetailedTiming {
         }
 
         data.extend_from_slice(&[
-            self.horizontal_border.into_raw(),
-            self.vertical_border.into_raw(),
+            self.horizontal.border.into_raw(),
+            self.vertical.border.into_raw(),
             flags,
         ]);
 

@@ -13,7 +13,8 @@ use serde_json::Value;
 use redid::{
     EdidAnalogSignalLevelStandard, EdidAnalogVideoInputDefinition, EdidAnalogVideoSetup,
     EdidChromaticityPoint, EdidChromaticityPoints, EdidDescriptorCustom,
-    EdidDescriptorDetailedTiming, EdidDescriptorString, EdidDetailedTimingAnalogSync,
+    EdidDescriptorDetailedTiming, EdidDescriptorDetailedTimingHorizontal,
+    EdidDescriptorDetailedTimingVertical, EdidDescriptorString, EdidDetailedTimingAnalogSync,
     EdidDetailedTimingDigitalCompositeSync, EdidDetailedTimingDigitalSeparateSync,
     EdidDetailedTimingDigitalSync, EdidDetailedTimingDigitalSyncKind, EdidDetailedTimingStereo,
     EdidDetailedTimingSync, EdidDisplayColorType, EdidDisplayRangeHorizontalFreq,
@@ -851,18 +852,26 @@ fn decode_descriptor_dtd(desc: &Value) -> EdidDescriptorDetailedTiming {
         .pixel_clock(pixel_clock)
         .sync_type(sync_type_type)
         .stereo(stereo)
-        .horizontal_size(hsize)
-        .vertical_size(vsize)
-        .horizontal_front_porch(hfp)
-        .vertical_front_porch(vfp)
-        .horizontal_addressable(hdisplay)
-        .vertical_addressable(vdisplay)
-        .horizontal_blanking(hblank)
-        .vertical_blanking(vblank)
-        .horizontal_border(hborder)
-        .vertical_border(vborder)
-        .horizontal_sync_pulse(hsync)
-        .vertical_sync_pulse(vsync)
+        .horizontal(
+            EdidDescriptorDetailedTimingHorizontal::builder()
+                .active(hdisplay)
+                .front_porch(hfp)
+                .sync_pulse(hsync)
+                .blanking(hblank)
+                .border(hborder)
+                .size(hsize)
+                .build(),
+        )
+        .vertical(
+            EdidDescriptorDetailedTimingVertical::builder()
+                .active(vdisplay)
+                .front_porch(vfp)
+                .sync_pulse(vsync)
+                .blanking(vblank)
+                .border(vborder)
+                .size(vsize)
+                .build(),
+        )
         .build()
 }
 

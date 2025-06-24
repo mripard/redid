@@ -30,6 +30,7 @@ pub use descriptors::{
     EdidDescriptor, EdidDescriptor10BitsTiming, EdidDescriptor12BitsTiming,
     EdidDescriptor6BitsTiming, EdidDescriptor8BitsTiming, EdidDescriptorCustom,
     EdidDescriptorCustomPayload, EdidDescriptorCustomTag, EdidDescriptorDetailedTiming,
+    EdidDescriptorDetailedTimingHorizontal, EdidDescriptorDetailedTimingVertical,
     EdidDescriptorString, EdidDescriptorTiming, EdidDetailedTimingAnalogSync,
     EdidDetailedTimingDigitalCompositeSync, EdidDetailedTimingDigitalSeparateSync,
     EdidDetailedTimingDigitalSync, EdidDetailedTimingDigitalSyncKind, EdidDetailedTimingPixelClock,
@@ -2064,23 +2065,26 @@ impl IntoBytes for EdidRelease4 {
 #[cfg(test)]
 mod test_edid_release4 {
     use crate::{
-        descriptors::EdidDetailedTimingPixelClock, EdidAnalogSignalLevelStandard,
-        EdidAnalogVideoInputDefinition, EdidAnalogVideoSetup, EdidChromaticityPoint,
-        EdidChromaticityPoints, EdidDescriptor10BitsTiming, EdidDescriptor12BitsTiming,
-        EdidDescriptor6BitsTiming, EdidDescriptor8BitsTiming, EdidDescriptorDetailedTiming,
-        EdidDescriptorString, EdidDetailedTimingDigitalSeparateSync, EdidDetailedTimingDigitalSync,
-        EdidDetailedTimingDigitalSyncKind, EdidDetailedTimingSizeMm, EdidDetailedTimingStereo,
-        EdidDetailedTimingSync, EdidDisplayColorType, EdidDisplayRangePixelClock,
-        EdidDisplayRangeVerticalFreq, EdidDisplayTransferCharacteristics, EdidEstablishedTiming,
-        EdidFilterChromaticity, EdidManufacturer, EdidProductCode,
-        EdidR4BasicDisplayParametersFeatures, EdidR4Date, EdidR4Descriptor,
-        EdidR4DescriptorEstablishedTimings, EdidR4DescriptorEstablishedTimingsIII,
-        EdidR4DisplayColor, EdidR4DisplayRangeHorizontalFreq, EdidR4DisplayRangeLimits,
-        EdidR4DisplayRangeVerticalFreq, EdidR4DisplayRangeVideoTimingsAspectRatio,
-        EdidR4DisplayRangeVideoTimingsCVT, EdidR4DisplayRangeVideoTimingsCVTR1,
-        EdidR4DisplayRangeVideoTimingsSupport, EdidR4FeatureSupport, EdidR4ImageSize,
-        EdidR4ManufactureDate, EdidR4VideoInputDefinition, EdidRelease4, EdidScreenSize,
-        EdidScreenSizeLength, EdidSerialNumber, EdidStandardTiming,
+        descriptors::{
+            EdidDescriptorDetailedTimingHorizontal, EdidDescriptorDetailedTimingVertical,
+            EdidDetailedTimingPixelClock,
+        },
+        EdidAnalogSignalLevelStandard, EdidAnalogVideoInputDefinition, EdidAnalogVideoSetup,
+        EdidChromaticityPoint, EdidChromaticityPoints, EdidDescriptor10BitsTiming,
+        EdidDescriptor12BitsTiming, EdidDescriptor6BitsTiming, EdidDescriptor8BitsTiming,
+        EdidDescriptorDetailedTiming, EdidDescriptorString, EdidDetailedTimingDigitalSeparateSync,
+        EdidDetailedTimingDigitalSync, EdidDetailedTimingDigitalSyncKind, EdidDetailedTimingSizeMm,
+        EdidDetailedTimingStereo, EdidDetailedTimingSync, EdidDisplayColorType,
+        EdidDisplayRangePixelClock, EdidDisplayRangeVerticalFreq,
+        EdidDisplayTransferCharacteristics, EdidEstablishedTiming, EdidFilterChromaticity,
+        EdidManufacturer, EdidProductCode, EdidR4BasicDisplayParametersFeatures, EdidR4Date,
+        EdidR4Descriptor, EdidR4DescriptorEstablishedTimings,
+        EdidR4DescriptorEstablishedTimingsIII, EdidR4DisplayColor,
+        EdidR4DisplayRangeHorizontalFreq, EdidR4DisplayRangeLimits, EdidR4DisplayRangeVerticalFreq,
+        EdidR4DisplayRangeVideoTimingsAspectRatio, EdidR4DisplayRangeVideoTimingsCVT,
+        EdidR4DisplayRangeVideoTimingsCVTR1, EdidR4DisplayRangeVideoTimingsSupport,
+        EdidR4FeatureSupport, EdidR4ImageSize, EdidR4ManufactureDate, EdidR4VideoInputDefinition,
+        EdidRelease4, EdidScreenSize, EdidScreenSizeLength, EdidSerialNumber, EdidStandardTiming,
         EdidStandardTimingHorizontalSize, EdidStandardTimingRatio, EdidStandardTimingRefreshRate,
         IntoBytes,
     };
@@ -2200,18 +2204,26 @@ mod test_edid_release4 {
                 EdidR4Descriptor::DetailedTiming(
                     EdidDescriptorDetailedTiming::builder()
                         .pixel_clock(EdidDetailedTimingPixelClock::try_from(162_000).unwrap())
-                        .horizontal_addressable(EdidDescriptor12BitsTiming::try_from(1600).unwrap())
-                        .horizontal_blanking(EdidDescriptor12BitsTiming::try_from(560).unwrap())
-                        .vertical_addressable(EdidDescriptor12BitsTiming::try_from(1200).unwrap())
-                        .vertical_blanking(EdidDescriptor12BitsTiming::try_from(50).unwrap())
-                        .horizontal_front_porch(EdidDescriptor10BitsTiming::try_from(64).unwrap())
-                        .horizontal_sync_pulse(EdidDescriptor10BitsTiming::try_from(192).unwrap())
-                        .vertical_front_porch(EdidDescriptor6BitsTiming::try_from(1).unwrap())
-                        .vertical_sync_pulse(EdidDescriptor6BitsTiming::try_from(3).unwrap())
-                        .horizontal_size(EdidDetailedTimingSizeMm::try_from(427).unwrap())
-                        .vertical_size(EdidDetailedTimingSizeMm::try_from(320).unwrap())
-                        .horizontal_border(EdidDescriptor8BitsTiming::try_from(0).unwrap())
-                        .vertical_border(EdidDescriptor8BitsTiming::try_from(0).unwrap())
+                        .horizontal(
+                            EdidDescriptorDetailedTimingHorizontal::builder()
+                                .active(EdidDescriptor12BitsTiming::try_from(1600).unwrap())
+                                .blanking(EdidDescriptor12BitsTiming::try_from(560).unwrap())
+                                .front_porch(EdidDescriptor10BitsTiming::try_from(64).unwrap())
+                                .sync_pulse(EdidDescriptor10BitsTiming::try_from(192).unwrap())
+                                .size(EdidDetailedTimingSizeMm::try_from(427).unwrap())
+                                .border(EdidDescriptor8BitsTiming::try_from(0).unwrap())
+                                .build(),
+                        )
+                        .vertical(
+                            EdidDescriptorDetailedTimingVertical::builder()
+                                .active(EdidDescriptor12BitsTiming::try_from(1200).unwrap())
+                                .blanking(EdidDescriptor12BitsTiming::try_from(50).unwrap())
+                                .front_porch(EdidDescriptor6BitsTiming::try_from(1).unwrap())
+                                .sync_pulse(EdidDescriptor6BitsTiming::try_from(3).unwrap())
+                                .size(EdidDetailedTimingSizeMm::try_from(320).unwrap())
+                                .border(EdidDescriptor8BitsTiming::try_from(0).unwrap())
+                                .build(),
+                        )
                         .interlace(false)
                         .stereo(EdidDetailedTimingStereo::None)
                         .sync_type(EdidDetailedTimingSync::Digital(
