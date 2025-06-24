@@ -716,7 +716,7 @@ impl EdidExtensionCTA861VideoCapabilityScanBehavior {
     }
 }
 
-#[derive(Clone, Copy, Debug, TypedBuilder)]
+#[derive(Clone, Copy, Debug, Default, TypedBuilder)]
 #[builder(field_defaults(default))]
 pub struct EdidExtensionCTA861VideoCapabilityDataBlock {
     qy_quant: EdidExtensionCTA861VideoCapabilityQuantization,
