@@ -441,6 +441,27 @@ impl TryFrom<[u8; 4]> for CecAddress {
     }
 }
 
+impl TryFrom<String> for CecAddress {
+    type Error = EdidTypeConversionError<u8>;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        let groups: Vec<&str> = value.split('.').collect();
+        let mut res = [0; 4];
+
+        if groups.len() != 4 {
+            return Err(EdidTypeConversionError::Value(value));
+        }
+
+        for (idx, slot) in res.iter_mut().enumerate() {
+            *slot = groups[idx]
+                .parse()
+                .map_err(|_e| EdidTypeConversionError::Value(groups[idx].to_owned()))?;
+        }
+
+        res.try_into()
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct EdidExtensionCTA861Hdmi14bTmdsRate(u16);
 
