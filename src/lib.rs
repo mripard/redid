@@ -220,6 +220,14 @@ impl TryFrom<&str> for EdidManufacturer {
     }
 }
 
+impl TryFrom<String> for EdidManufacturer {
+    type Error = EdidTypeConversionError<String>;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        value.as_str().try_into()
+    }
+}
+
 impl IntoBytes for EdidManufacturer {
     fn into_bytes(self) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(EDID_MANUFACTURER_LEN);
