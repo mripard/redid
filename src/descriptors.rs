@@ -323,13 +323,20 @@ where
     }
 }
 
-pub type EdidDescriptor6BitsTiming = EdidDescriptorTiming<6, u8>;
+#[derive(Clone, Copy, Debug)]
+pub struct EdidDescriptor6BitsTiming(EdidDescriptorTiming<6, u8>);
+
+impl EdidDescriptor6BitsTiming {
+    fn into_raw(self) -> u8 {
+        self.0.into_raw()
+    }
+}
 
 impl TryFrom<u8> for EdidDescriptor6BitsTiming {
     type Error = EdidTypeConversionError<u8>;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
-        EdidDescriptorTiming::try_from(value)
+        Ok(Self(EdidDescriptorTiming::try_from(value)?))
     }
 }
 
@@ -346,13 +353,20 @@ mod test_edid_detailed_timings_6bits_fields {
     }
 }
 
-pub type EdidDescriptor8BitsTiming = EdidDescriptorTiming<8, u8>;
+#[derive(Clone, Copy, Debug)]
+pub struct EdidDescriptor8BitsTiming(EdidDescriptorTiming<8, u8>);
+
+impl EdidDescriptor8BitsTiming {
+    fn into_raw(self) -> u8 {
+        self.0.into_raw()
+    }
+}
 
 impl TryFrom<u8> for EdidDescriptor8BitsTiming {
     type Error = EdidTypeConversionError<u8>;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
-        EdidDescriptorTiming::try_from(value)
+        Ok(Self(EdidDescriptorTiming::try_from(value)?))
     }
 }
 
@@ -367,13 +381,20 @@ mod test_edid_detailed_timings_8bits_fields {
     }
 }
 
-pub type EdidDescriptor10BitsTiming = EdidDescriptorTiming<10, u16>;
+#[derive(Clone, Copy, Debug)]
+pub struct EdidDescriptor10BitsTiming(EdidDescriptorTiming<10, u16>);
+
+impl EdidDescriptor10BitsTiming {
+    fn into_raw(self) -> u16 {
+        self.0.into_raw()
+    }
+}
 
 impl TryFrom<u16> for EdidDescriptor10BitsTiming {
     type Error = EdidTypeConversionError<u16>;
 
     fn try_from(value: u16) -> Result<Self, Self::Error> {
-        EdidDescriptorTiming::try_from(value)
+        Ok(Self(EdidDescriptorTiming::try_from(value)?))
     }
 }
 
@@ -390,13 +411,20 @@ mod test_edid_detailed_timings_10bits_fields {
     }
 }
 
-pub type EdidDescriptor12BitsTiming = EdidDescriptorTiming<12, u16>;
+#[derive(Clone, Copy, Debug)]
+pub struct EdidDescriptor12BitsTiming(EdidDescriptorTiming<12, u16>);
+
+impl EdidDescriptor12BitsTiming {
+    fn into_raw(self) -> u16 {
+        self.0.into_raw()
+    }
+}
 
 impl TryFrom<u16> for EdidDescriptor12BitsTiming {
     type Error = EdidTypeConversionError<u16>;
 
     fn try_from(value: u16) -> Result<Self, Self::Error> {
-        EdidDescriptorTiming::try_from(value)
+        Ok(Self(EdidDescriptorTiming::try_from(value)?))
     }
 }
 
