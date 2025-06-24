@@ -378,7 +378,10 @@ mod test_edid_year {
 ///
 /// Contains a year, starting from 1990, and an optional week in the 1-53 range.
 #[derive(Clone, Copy, Debug)]
-pub struct EdidManufactureDate(Option<EdidWeek>, EdidYear);
+pub struct EdidManufactureDate {
+    week: Option<EdidWeek>,
+    year: EdidYear,
+}
 
 impl TryFrom<(u8, u16)> for EdidManufactureDate {
     type Error = EdidTypeConversionError<u16>;
@@ -397,7 +400,10 @@ impl TryFrom<(u8, u16)> for EdidManufactureDate {
             })?;
         let year = value.1.try_into()?;
 
-        Ok(Self(Some(week), year))
+        Ok(Self {
+            week: Some(week),
+            year,
+        })
     }
 }
 
@@ -405,7 +411,10 @@ impl TryFrom<u16> for EdidManufactureDate {
     type Error = EdidTypeConversionError<u16>;
 
     fn try_from(value: u16) -> Result<Self, Self::Error> {
-        Ok(Self(None, value.try_into()?))
+        Ok(Self {
+            week: None,
+            year: value.try_into()?,
+        })
     }
 }
 
@@ -413,10 +422,10 @@ impl IntoBytes for EdidManufactureDate {
     fn into_bytes(self) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(EDID_DATE_LEN);
 
-        let week = if let Some(val) = self.0 { val.0 } else { 0 };
+        let week = if let Some(val) = self.week { val.0 } else { 0 };
         bytes.push(week);
 
-        let year = u8::try_from(self.1 .0 - 1990).expect("Year would overflow our type.");
+        let year = u8::try_from(self.year.0 - 1990).expect("Year would overflow our type.");
         bytes.push(year);
 
         let len = bytes.len();
@@ -478,7 +487,10 @@ mod test_edid_week_release_4 {
 ///
 /// Contains a year, starting from 1990, and an optional week in the 1-54 range.
 #[derive(Clone, Copy, Debug)]
-pub struct EdidR4ManufactureDate(Option<EdidR4Week>, EdidYear);
+pub struct EdidR4ManufactureDate {
+    week: Option<EdidR4Week>,
+    year: EdidYear,
+}
 
 impl TryFrom<(u8, u16)> for EdidR4ManufactureDate {
     type Error = EdidTypeConversionError<u16>;
@@ -497,7 +509,10 @@ impl TryFrom<(u8, u16)> for EdidR4ManufactureDate {
             })?;
         let year = value.1.try_into()?;
 
-        Ok(Self(Some(week), year))
+        Ok(Self {
+            week: Some(week),
+            year,
+        })
     }
 }
 
@@ -505,7 +520,10 @@ impl TryFrom<u16> for EdidR4ManufactureDate {
     type Error = EdidTypeConversionError<u16>;
 
     fn try_from(value: u16) -> Result<Self, Self::Error> {
-        Ok(Self(None, value.try_into()?))
+        Ok(Self {
+            week: None,
+            year: value.try_into()?,
+        })
     }
 }
 
@@ -513,10 +531,10 @@ impl IntoBytes for EdidR4ManufactureDate {
     fn into_bytes(self) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(EDID_DATE_LEN);
 
-        let week = if let Some(val) = self.0 { val.0 } else { 0 };
+        let week = if let Some(val) = self.week { val.0 } else { 0 };
         bytes.push(week);
 
-        let year = u8::try_from(self.1 .0 - 1990).expect("Year would overflow our type.");
+        let year = u8::try_from(self.year.0 - 1990).expect("Year would overflow our type.");
         bytes.push(year);
 
         let len = bytes.len();
