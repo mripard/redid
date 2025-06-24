@@ -2,6 +2,8 @@ use core::{cmp, fmt};
 
 use encoding::{all::ISO_8859_1, EncoderTrap, Encoding as _};
 use num_traits::{Bounded, CheckedShl, Num, ToPrimitive as _, WrappingSub};
+#[cfg(feature = "serde")]
+use serde::Deserialize;
 use typed_builder::TypedBuilder;
 
 use crate::{
@@ -54,6 +56,8 @@ mod test_max_size_bits {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "u8"))]
 pub struct EdidDescriptorCustomTag(u8);
 
 impl TryFrom<u8> for EdidDescriptorCustomTag {
@@ -69,6 +73,8 @@ impl TryFrom<u8> for EdidDescriptorCustomTag {
 }
 
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "Vec<u8>"))]
 pub struct EdidDescriptorCustomPayload(Vec<u8>);
 
 impl TryFrom<Vec<u8>> for EdidDescriptorCustomPayload {
@@ -86,6 +92,8 @@ impl TryFrom<Vec<u8>> for EdidDescriptorCustomPayload {
 }
 
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidDescriptorCustom {
     tag: EdidDescriptorCustomTag,
     payload: EdidDescriptorCustomPayload,
@@ -126,6 +134,8 @@ impl TryFrom<(u8, Vec<u8>)> for EdidDescriptorCustom {
 }
 
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "String"))]
 pub struct EdidDescriptorString(String);
 
 impl EdidDescriptorString {
@@ -206,6 +216,8 @@ impl IntoBytes for EdidDescriptorString {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "u32"))]
 pub struct EdidDetailedTimingPixelClock(u32);
 
 impl EdidDetailedTimingPixelClock {
@@ -253,30 +265,40 @@ mod test_descriptor_detailed_timing_pixel_clock {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum EdidDetailedTimingAnalogSync {
     BipolarComposite(bool, bool),
     Composite(bool, bool),
 }
 
 #[derive(Clone, Copy, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidDetailedTimingDigitalCompositeSync {
     #[builder(default)]
     serrations: bool,
 }
 
 #[derive(Clone, Copy, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidDetailedTimingDigitalSeparateSync {
     #[builder(default)]
     vsync_positive: bool,
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum EdidDetailedTimingDigitalSyncKind {
     Composite(EdidDetailedTimingDigitalCompositeSync),
     Separate(EdidDetailedTimingDigitalSeparateSync),
 }
 
 #[derive(Clone, Copy, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidDetailedTimingDigitalSync {
     kind: EdidDetailedTimingDigitalSyncKind,
 
@@ -285,12 +307,16 @@ pub struct EdidDetailedTimingDigitalSync {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum EdidDetailedTimingSync {
     Analog(EdidDetailedTimingAnalogSync),
     Digital(EdidDetailedTimingDigitalSync),
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum EdidDetailedTimingStereo {
     None,
     FieldSequentialRightOnSync,
@@ -333,6 +359,8 @@ where
 }
 
 #[derive(Clone, Copy, Debug, Default)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "u8"))]
 pub struct EdidDescriptor6BitsTiming(EdidDescriptorTiming<6, u8>);
 
 impl EdidDescriptor6BitsTiming {
@@ -363,6 +391,8 @@ mod test_edid_detailed_timings_6bits_fields {
 }
 
 #[derive(Clone, Copy, Debug, Default)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "u8"))]
 pub struct EdidDescriptor8BitsTiming(EdidDescriptorTiming<8, u8>);
 
 impl EdidDescriptor8BitsTiming {
@@ -391,6 +421,8 @@ mod test_edid_detailed_timings_8bits_fields {
 }
 
 #[derive(Clone, Copy, Debug, Default)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "u16"))]
 pub struct EdidDescriptor10BitsTiming(EdidDescriptorTiming<10, u16>);
 
 impl EdidDescriptor10BitsTiming {
@@ -421,6 +453,8 @@ mod test_edid_detailed_timings_10bits_fields {
 }
 
 #[derive(Clone, Copy, Debug, Default)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "u16"))]
 pub struct EdidDescriptor12BitsTiming(EdidDescriptorTiming<12, u16>);
 
 impl EdidDescriptor12BitsTiming {
@@ -466,28 +500,36 @@ mod test_edid_detailed_timings_size {
 }
 
 #[derive(Clone, Copy, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidDescriptorDetailedTimingHorizontal {
     active: EdidDescriptor12BitsTiming,
     front_porch: EdidDescriptor10BitsTiming,
     sync_pulse: EdidDescriptor10BitsTiming,
     back_porch: EdidDescriptor12BitsTiming,
     #[builder(default)]
+    #[cfg_attr(feature = "serde", serde(default))]
     border: EdidDescriptor8BitsTiming,
     size_mm: EdidDetailedTimingSizeMm,
 }
 
 #[derive(Clone, Copy, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidDescriptorDetailedTimingVertical {
     active: EdidDescriptor12BitsTiming,
     front_porch: EdidDescriptor6BitsTiming,
     sync_pulse: EdidDescriptor6BitsTiming,
     back_porch: EdidDescriptor12BitsTiming,
     #[builder(default)]
+    #[cfg_attr(feature = "serde", serde(default))]
     border: EdidDescriptor8BitsTiming,
     size_mm: EdidDetailedTimingSizeMm,
 }
 
 #[derive(Clone, Copy, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidDescriptorDetailedTiming {
     pixel_clock: EdidDetailedTimingPixelClock,
 
@@ -495,6 +537,7 @@ pub struct EdidDescriptorDetailedTiming {
     vertical: EdidDescriptorDetailedTimingVertical,
 
     #[builder(default)]
+    #[cfg_attr(feature = "serde", serde(default))]
     interlace: bool,
 
     sync_type: EdidDetailedTimingSync,
@@ -663,6 +706,8 @@ impl IntoBytes for EdidDescriptorDetailedTiming {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "u8"))]
 pub struct EdidDisplayRangeHorizontalFreq(u8);
 
 impl TryFrom<u8> for EdidDisplayRangeHorizontalFreq {
@@ -678,6 +723,8 @@ impl TryFrom<u8> for EdidDisplayRangeHorizontalFreq {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "u8"))]
 pub struct EdidDisplayRangeVerticalFreq(u8);
 
 impl TryFrom<u8> for EdidDisplayRangeVerticalFreq {
@@ -693,6 +740,8 @@ impl TryFrom<u8> for EdidDisplayRangeVerticalFreq {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "u16"))]
 pub struct EdidDisplayRangePixelClock(u16);
 
 impl EdidDisplayRangePixelClock {
@@ -741,6 +790,8 @@ mod test_descriptor_display_range_pixel_clock {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "u16"))]
 pub struct EdidDisplayRangeVideoTimingsGTFStartFrequency(u16);
 
 impl TryFrom<u16> for EdidDisplayRangeVideoTimingsGTFStartFrequency {
@@ -762,6 +813,8 @@ impl EdidDisplayRangeVideoTimingsGTFStartFrequency {
 }
 
 #[derive(Clone, Copy, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidDisplayRangeVideoTimingsGTF {
     #[builder(setter(into))]
     horizontal_start_frequency: EdidDisplayRangeVideoTimingsGTFStartFrequency,
@@ -772,12 +825,17 @@ pub struct EdidDisplayRangeVideoTimingsGTF {
 }
 
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 pub enum EdidR3DisplayRangeVideoTimingsSupport {
+    #[cfg_attr(feature = "serde", serde(rename = "default_gtf"))]
     DefaultGTF,
+    #[cfg_attr(feature = "serde", serde(rename = "secondary_gtf"))]
     SecondaryGTF(EdidDisplayRangeVideoTimingsGTF),
 }
 
 #[derive(Clone, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidR3DisplayRangeLimits {
     min_hfreq: EdidDisplayRangeHorizontalFreq,
     max_hfreq: EdidDisplayRangeHorizontalFreq,
@@ -834,6 +892,8 @@ impl IntoBytes for EdidR3DisplayRangeLimits {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "u16"))]
 pub struct EdidR4DisplayRangeHorizontalFreq(bool, u8);
 
 impl TryFrom<u16> for EdidR4DisplayRangeHorizontalFreq {
@@ -857,6 +917,8 @@ impl TryFrom<u16> for EdidR4DisplayRangeHorizontalFreq {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "u16"))]
 pub struct EdidR4DisplayRangeVerticalFreq(bool, u8);
 
 impl TryFrom<u16> for EdidR4DisplayRangeVerticalFreq {
@@ -881,6 +943,8 @@ impl TryFrom<u16> for EdidR4DisplayRangeVerticalFreq {
 #[repr(u8)]
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum EdidR4DisplayRangeVideoTimingsAspectRatio {
     Ratio_4_3 = 0,
     Ratio_16_9,
@@ -890,6 +954,8 @@ pub enum EdidR4DisplayRangeVideoTimingsAspectRatio {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "u16"))]
 pub struct EdidR4DisplayRangeVideoTimingsCVTPixelClockDiff(u8);
 
 impl TryFrom<EdidDisplayRangePixelClock> for EdidR4DisplayRangeVideoTimingsCVTPixelClockDiff {
@@ -937,6 +1003,7 @@ impl EdidR4DisplayRangeVideoTimingsCVTPixelClockDiff {
 }
 
 #[derive(Clone, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 #[builder(mutators(
     #[allow(unreachable_pub)]
     pub fn supported_aspect_ratios(&mut self, ar: Vec<EdidR4DisplayRangeVideoTimingsAspectRatio>) {
@@ -948,6 +1015,7 @@ impl EdidR4DisplayRangeVideoTimingsCVTPixelClockDiff {
         self.supported_aspect_ratios.push(ar);
     }
 ))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidR4DisplayRangeVideoTimingsCVTR1 {
     // FIXME: Max 8184 pixels
     maximum_active_pixels_per_line: u16,
@@ -978,20 +1046,40 @@ pub struct EdidR4DisplayRangeVideoTimingsCVTR1 {
 }
 
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum EdidR4DisplayRangeVideoTimingsCVT {
     R1(EdidR4DisplayRangeVideoTimingsCVTR1),
 }
 
-#[derive(Clone, Debug)]
-pub enum EdidR4DisplayRangeVideoTimingsSupport {
-    DefaultGTF,
-    RangeLimitsOnly,
-    #[deprecated = "GTF is considered obsolete with EDID 1.4"]
-    SecondaryGTF(EdidDisplayRangeVideoTimingsGTF),
-    CVTSupported(EdidR4DisplayRangeVideoTimingsCVT),
+// It's a bit of an ugly workaround, but otherwise the serde Deserialize implementation will
+// trigger a deprecation warning.
+//
+// See https://github.com/rust-lang/rust/issues/87454
+#[allow(deprecated)]
+mod vid_timing {
+    use super::{EdidDisplayRangeVideoTimingsGTF, EdidR4DisplayRangeVideoTimingsCVT};
+    #[cfg(feature = "serde")]
+    use serde::Deserialize;
+
+    #[derive(Clone, Debug)]
+    #[cfg_attr(feature = "serde", derive(Deserialize))]
+    #[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+    pub enum EdidR4DisplayRangeVideoTimingsSupport {
+        #[cfg_attr(feature = "serde", serde(rename = "default_gtf"))]
+        DefaultGTF,
+        RangeLimitsOnly,
+        #[deprecated = "GTF is considered obsolete with EDID 1.4"]
+        SecondaryGTF(EdidDisplayRangeVideoTimingsGTF),
+        #[cfg_attr(feature = "serde", serde(rename = "cvt_supported"))]
+        CVTSupported(EdidR4DisplayRangeVideoTimingsCVT),
+    }
 }
+pub use vid_timing::EdidR4DisplayRangeVideoTimingsSupport;
 
 #[derive(Clone, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidR4DisplayRangeLimits {
     #[builder(setter(into))]
     min_hfreq: EdidR4DisplayRangeHorizontalFreq,
@@ -1137,6 +1225,7 @@ impl IntoBytes for EdidR4DisplayRangeLimits {
 
 #[allow(non_camel_case_types)]
 #[derive(Copy, Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 pub enum EdidR4DescriptorEstablishedTimingsIII {
     ET_1152_864_75Hz = 0,
     ET_1024_768_85Hz,
@@ -1186,6 +1275,7 @@ pub enum EdidR4DescriptorEstablishedTimingsIII {
 }
 
 #[derive(Clone, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 #[builder(mutators(
     #[allow(unreachable_pub)]
     pub fn established_timings(&mut self, et: Vec<EdidR4DescriptorEstablishedTimingsIII>) {
@@ -1197,6 +1287,7 @@ pub enum EdidR4DescriptorEstablishedTimingsIII {
         self.established_timings.push(et);
     }
 ))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidR4DescriptorEstablishedTimings {
     #[builder(via_mutators)]
     established_timings: Vec<EdidR4DescriptorEstablishedTimingsIII>,
@@ -1234,6 +1325,8 @@ impl IntoBytes for EdidR4DescriptorEstablishedTimings {
 }
 
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum EdidR3Descriptor {
     DetailedTiming(EdidDescriptorDetailedTiming),
     Custom(EdidDescriptorCustom),
@@ -1305,6 +1398,8 @@ impl IntoBytes for EdidR3Descriptor {
 }
 
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub enum EdidR4Descriptor {
     DetailedTiming(EdidDescriptorDetailedTiming),
     Custom(EdidDescriptorCustom),
@@ -1408,6 +1503,7 @@ mod tests {
 }
 
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 pub enum EdidDescriptor {
     R3(EdidR3Descriptor),
     R4(EdidR4Descriptor),

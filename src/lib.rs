@@ -21,6 +21,8 @@
 use core::{array, fmt, iter, num};
 
 use num_traits::ToPrimitive as _;
+#[cfg(feature = "serde")]
+use serde::{de, Deserialize, Deserializer};
 use static_assertions::const_assert_eq;
 use typed_builder::TypedBuilder;
 
@@ -195,6 +197,9 @@ enum EdidRelease {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "String"))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidManufacturer([u8; EDID_MANUFACTURER_CHAR_LEN]);
 
 impl TryFrom<&str> for EdidManufacturer {
@@ -259,6 +264,8 @@ impl IntoBytes for EdidManufacturer {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(transparent))]
 pub struct EdidProductCode(u16);
 
 impl From<u16> for EdidProductCode {
@@ -290,6 +297,8 @@ impl IntoBytes for EdidProductCode {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "u32"))]
 pub struct EdidSerialNumber(u32);
 
 impl From<u32> for EdidSerialNumber {
@@ -323,6 +332,8 @@ impl IntoBytes for EdidSerialNumber {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "u8"))]
 pub struct EdidWeek(u8);
 
 impl TryFrom<u8> for EdidWeek {
@@ -351,6 +362,8 @@ mod test_edid_week {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "u16"))]
 struct EdidYear(u16);
 
 impl TryFrom<u16> for EdidYear {
@@ -381,6 +394,8 @@ mod test_edid_year {
 ///
 /// Contains a year, starting from 1990, and an optional week in the 1-53 range.
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidManufactureDate {
     week: Option<EdidWeek>,
     year: EdidYear,
@@ -459,6 +474,8 @@ mod test_edid_manufacture_date {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "u8"))]
 pub struct EdidR4Week(u8);
 
 impl TryFrom<u8> for EdidR4Week {
@@ -490,6 +507,8 @@ mod test_edid_week_release_4 {
 ///
 /// Contains a year, starting from 1990, and an optional week in the 1-54 range.
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidR4ManufactureDate {
     week: Option<EdidR4Week>,
     year: EdidYear,
@@ -571,6 +590,8 @@ mod test_edid_manufacture_date_release_4 {
 ///
 /// Contains a Year, starting from 1990.
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(transparent))]
 pub struct EdidR4ModelDate(EdidYear);
 
 impl TryFrom<u16> for EdidR4ModelDate {
@@ -619,6 +640,8 @@ mod test_edid_model_date {
 
 /// EDID 1.4 Date Representation.
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub enum EdidR4Date {
     Manufacture(EdidR4ManufactureDate),
     Model(EdidR4ModelDate),
@@ -716,6 +739,7 @@ mod test_edid_date {
 #[repr(u8)]
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 pub enum EdidAnalogSignalLevelStandard {
     V_0_700_S_0_300_T_1_000 = 0,
     V_0_714_S_0_286_T_1_000,
@@ -725,12 +749,15 @@ pub enum EdidAnalogSignalLevelStandard {
 
 #[repr(u8)]
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 pub enum EdidAnalogVideoSetup {
     BlankLevelIsBlackLevel = 0,
     BlankToBlackSetupOrPedestal,
 }
 
 #[derive(Clone, Copy, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidAnalogVideoInputDefinition {
     signal_level: EdidAnalogSignalLevelStandard,
     setup: EdidAnalogVideoSetup,
@@ -788,6 +815,8 @@ impl IntoBytes for EdidAnalogVideoInputDefinition {
 }
 
 #[derive(Clone, Copy, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidR3DigitalVideoInputDefinition {
     #[builder(default)]
     dfp1_compatible: bool,
@@ -810,6 +839,8 @@ impl IntoBytes for EdidR3DigitalVideoInputDefinition {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum EdidR3VideoInputDefinition {
     Analog(EdidAnalogVideoInputDefinition),
     Digital(EdidR3DigitalVideoInputDefinition),
@@ -841,6 +872,8 @@ impl IntoBytes for EdidR3VideoInputDefinition {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "u8"))]
 pub struct EdidScreenSizeLength(u8);
 
 impl TryFrom<u8> for EdidScreenSizeLength {
@@ -856,12 +889,17 @@ impl TryFrom<u8> for EdidScreenSizeLength {
 }
 
 #[derive(Clone, Copy, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidScreenSize {
     horizontal_cm: EdidScreenSizeLength,
     vertical_cm: EdidScreenSizeLength,
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub enum EdidR3ImageSize {
     Size(EdidScreenSize),
     Undefined,
@@ -890,15 +928,21 @@ impl IntoBytes for EdidR3ImageSize {
 
 #[repr(u8)]
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum EdidDisplayColorType {
     MonochromeGrayScale = 0,
+    #[cfg_attr(feature = "serde", serde(rename = "rgb_color"))]
     RGBColor,
+    #[cfg_attr(feature = "serde", serde(rename = "non_rgb_color"))]
     NonRGBColor,
     Undefined,
 }
 
 /// Display Transfer Characteristics (aka Gamma)
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum EdidDisplayTransferCharacteristics {
     Gamma(f32),
     DisplayInformationExtension(()),
@@ -960,21 +1004,28 @@ mod test_display_transfer_characteristics {
 }
 
 #[derive(Clone, Copy, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidR3FeatureSupport {
     #[builder(default)]
+    #[cfg_attr(feature = "serde", serde(default))]
     standby: bool,
 
     #[builder(default)]
+    #[cfg_attr(feature = "serde", serde(default))]
     suspend: bool,
 
     #[builder(default)]
+    #[cfg_attr(feature = "serde", serde(default))]
     active_off_is_very_low_power: bool,
     display_type: EdidDisplayColorType,
 
     #[builder(default)]
+    #[cfg_attr(feature = "serde", serde(default))]
     srgb_default_color_space: bool,
 
     #[builder(default)]
+    #[cfg_attr(feature = "serde", serde(default))]
     default_gtf_supported: bool,
 }
 
@@ -1021,6 +1072,8 @@ impl IntoBytes for EdidR3FeatureSupport {
 }
 
 #[derive(Clone, Copy, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidR3BasicDisplayParametersFeatures {
     video_input: EdidR3VideoInputDefinition,
     size: EdidR3ImageSize,
@@ -1056,6 +1109,7 @@ impl IntoBytes for EdidR3BasicDisplayParametersFeatures {
 
 #[repr(u8)]
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 pub enum EdidR4DigitalColorDepth {
     DepthUndefined = 0,
     Depth6Bpc,
@@ -1068,6 +1122,7 @@ pub enum EdidR4DigitalColorDepth {
 
 #[repr(u8)]
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 pub enum EdidR4DigitalInterface {
     Undefined = 0,
     DVI,
@@ -1078,6 +1133,8 @@ pub enum EdidR4DigitalInterface {
 }
 
 #[derive(Clone, Copy, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidR4DigitalVideoInputDefinition {
     color_depth: EdidR4DigitalColorDepth,
     interface: EdidR4DigitalInterface,
@@ -1106,6 +1163,8 @@ impl IntoBytes for EdidR4DigitalVideoInputDefinition {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum EdidR4VideoInputDefinition {
     Analog(EdidAnalogVideoInputDefinition),
     Digital(EdidR4DigitalVideoInputDefinition),
@@ -1137,6 +1196,8 @@ impl IntoBytes for EdidR4VideoInputDefinition {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "(f32, f32)"))]
 pub struct EdidR4ImageLandscapeAspectRatio(f32, f32);
 
 impl TryFrom<(f32, f32)> for EdidR4ImageLandscapeAspectRatio {
@@ -1156,6 +1217,8 @@ impl TryFrom<(f32, f32)> for EdidR4ImageLandscapeAspectRatio {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "(f32, f32)"))]
 pub struct EdidR4ImagePortraitAspectRatio(f32, f32);
 
 impl TryFrom<(f32, f32)> for EdidR4ImagePortraitAspectRatio {
@@ -1178,6 +1241,8 @@ impl TryFrom<(f32, f32)> for EdidR4ImagePortraitAspectRatio {
 ///
 /// For displays that pivot, the screen size is considered in landscape mode.
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum EdidR4ImageSize {
     LandscapeRatio(EdidR4ImageLandscapeAspectRatio),
     PortraitRatio(EdidR4ImagePortraitAspectRatio),
@@ -1276,20 +1341,31 @@ mod test_size_release_4 {
 
 #[repr(u8)]
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 pub enum EdidR4DisplayColorEncoding {
     RGB444 = 0,
+
+    #[cfg_attr(feature = "serde", serde(rename = "RGB444, YUV444"))]
     RGB444YCbCr444,
+
+    #[cfg_attr(feature = "serde", serde(rename = "RGB444, YUV422"))]
     RGB444YCbCr422,
+
+    #[cfg_attr(feature = "serde", serde(rename = "RGB444, YUV444, YUV422"))]
     RGB444YCbCr444YCbCr422,
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum EdidR4DisplayColor {
     Analog(EdidDisplayColorType),
     Digital(EdidR4DisplayColorEncoding),
 }
 
 #[derive(Clone, Copy, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidR4FeatureSupport {
     #[builder(default)]
     #[deprecated]
@@ -1365,6 +1441,8 @@ impl IntoBytes for EdidR4FeatureSupport {
 }
 
 #[derive(Clone, Copy, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidR4BasicDisplayParametersFeatures {
     video_input: EdidR4VideoInputDefinition,
     size: EdidR4ImageSize,
@@ -1429,6 +1507,8 @@ impl IntoBytes for EdidBasicDisplayParametersFeatures {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(transparent))]
 pub struct EdidChromaticityCoordinate(f32);
 
 impl EdidChromaticityCoordinate {
@@ -1478,8 +1558,31 @@ impl TryFrom<(f32, f32)> for EdidChromaticityPoint {
     }
 }
 
+#[cfg(feature = "serde")]
+impl<'de> Deserialize<'de> for EdidChromaticityPoint {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(deny_unknown_fields)]
+        struct ChromaticityHelper {
+            x: f32,
+            y: f32,
+        }
+
+        let helper = ChromaticityHelper::deserialize(deserializer)?;
+        Ok(Self(
+            helper.x.try_into().map_err(de::Error::custom)?,
+            helper.y.try_into().map_err(de::Error::custom)?,
+        ))
+    }
+}
+
 #[derive(Clone, Copy, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 #[builder(field_defaults(setter(into)))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidChromaticityPoints {
     white: EdidChromaticityPoint,
     red: EdidChromaticityPoint,
@@ -1489,6 +1592,8 @@ pub struct EdidChromaticityPoints {
 
 #[allow(variant_size_differences)]
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum EdidFilterChromaticity {
     // FIXME: This must be consistent with EdidDisplayColorType.
     MonoChrome(EdidChromaticityPoint),
@@ -1581,6 +1686,7 @@ impl IntoBytes for EdidFilterChromaticity {
 
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 pub enum EdidEstablishedTiming {
     ET_1024_768_60hz,
     ET_1024_768_70hz,
@@ -1658,6 +1764,8 @@ impl IntoBytes for Vec<EdidEstablishedTiming> {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "u16"))]
 pub struct EdidStandardTimingHorizontalSize(u16);
 
 impl TryFrom<u16> for EdidStandardTimingHorizontalSize {
@@ -1679,6 +1787,8 @@ impl TryFrom<u16> for EdidStandardTimingHorizontalSize {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "u8"))]
 pub struct EdidStandardTimingRefreshRate(u8);
 
 impl TryFrom<u8> for EdidStandardTimingRefreshRate {
@@ -1695,6 +1805,7 @@ impl TryFrom<u8> for EdidStandardTimingRefreshRate {
 
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 pub enum EdidStandardTimingRatio {
     Ratio_16_10,
     Ratio_4_3,
@@ -1703,7 +1814,9 @@ pub enum EdidStandardTimingRatio {
 }
 
 #[derive(Clone, Copy, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 #[builder(field_defaults(setter(into)))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidStandardTiming {
     x: EdidStandardTimingHorizontalSize,
     ratio: EdidStandardTimingRatio,
@@ -1910,6 +2023,7 @@ impl From<EdidRelease4> for Edid {
 }
 
 #[derive(Clone, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 #[builder(mutators(
     #[allow(unreachable_pub)]
     pub fn descriptors(&mut self, d: Vec<EdidR3Descriptor>) {
@@ -1951,6 +2065,7 @@ impl From<EdidRelease4> for Edid {
         self.extensions.push(ext);
     }
 ))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidRelease3 {
     manufacturer: EdidManufacturer,
 
@@ -1965,9 +2080,11 @@ pub struct EdidRelease3 {
     filter_chromaticity: EdidFilterChromaticity,
 
     #[builder(via_mutators, default = vec![EdidEstablishedTiming::ET_640_480_60hz])]
+    #[cfg_attr(feature = "serde", serde(default))]
     established_timings: Vec<EdidEstablishedTiming>,
 
     #[builder(via_mutators)]
+    #[cfg_attr(feature = "serde", serde(default))]
     standard_timings: Vec<EdidStandardTiming>,
 
     preferred_timing: EdidDescriptorDetailedTiming,
@@ -1975,9 +2092,11 @@ pub struct EdidRelease3 {
     // FIXME: Monitor Name is mandatory
     // FIXME: Display Range Limits is mandatory
     #[builder(via_mutators)]
+    #[cfg_attr(feature = "serde", serde(default))]
     descriptors: Vec<EdidR3Descriptor>,
 
     #[builder(via_mutators)]
+    #[cfg_attr(feature = "serde", serde(default))]
     extensions: Vec<EdidExtension>,
 }
 
@@ -2001,6 +2120,7 @@ impl IntoBytes for EdidRelease3 {
 }
 
 #[derive(Clone, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 #[builder(mutators(
     #[allow(unreachable_pub)]
     pub fn descriptors(&mut self, d: Vec<EdidR4Descriptor>) {
@@ -2042,6 +2162,7 @@ impl IntoBytes for EdidRelease3 {
         self.extensions.push(ext);
     }
 ))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidRelease4 {
     manufacturer: EdidManufacturer,
 
@@ -2056,18 +2177,22 @@ pub struct EdidRelease4 {
     filter_chromaticity: EdidFilterChromaticity,
 
     #[builder(via_mutators, default = vec![EdidEstablishedTiming::ET_640_480_60hz])]
+    #[cfg_attr(feature = "serde", serde(default))]
     established_timings: Vec<EdidEstablishedTiming>,
 
     #[builder(via_mutators)]
+    #[cfg_attr(feature = "serde", serde(default))]
     standard_timings: Vec<EdidStandardTiming>,
 
     preferred_timing: EdidDescriptorDetailedTiming,
 
     // FIXME: If continuous frequency, a display range limits descriptor is required
     #[builder(via_mutators)]
+    #[cfg_attr(feature = "serde", serde(default))]
     descriptors: Vec<EdidR4Descriptor>,
 
     #[builder(via_mutators)]
+    #[cfg_attr(feature = "serde", serde(default))]
     extensions: Vec<EdidExtension>,
 }
 

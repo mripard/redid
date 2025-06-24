@@ -1,4 +1,6 @@
 use num_traits::ToPrimitive as _;
+#[cfg(feature = "serde")]
+use serde::{de, Deserialize, Deserializer};
 use typed_builder::TypedBuilder;
 
 use crate::{
@@ -27,6 +29,8 @@ const EDID_EXTENSION_CTA_861_HDMI_HEADER_LEN: usize = EDID_EXTENSION_CTA_861_VEN
 const EDID_EXTENSION_CTA_861_HDMI_VIDEO_HEADER_LEN: usize = 2;
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "u8"))]
 pub struct EdidExtensionCTA861AudioDataBlockChannels(u8);
 
 impl TryFrom<u8> for EdidExtensionCTA861AudioDataBlockChannels {
@@ -44,6 +48,7 @@ impl TryFrom<u8> for EdidExtensionCTA861AudioDataBlockChannels {
 #[allow(clippy::enum_variant_names)]
 #[repr(u8)]
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 pub enum EdidExtensionCTA861AudioDataBlockSamplingFrequency {
     Frequency32kHz = 0,
     Frequency44_1kHz,
@@ -57,6 +62,7 @@ pub enum EdidExtensionCTA861AudioDataBlockSamplingFrequency {
 #[allow(clippy::enum_variant_names)]
 #[repr(u8)]
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 pub enum EdidExtensionCTA861AudioDataBlockSamplingRate {
     Rate16Bit = 0,
     Rate20Bit,
@@ -64,6 +70,7 @@ pub enum EdidExtensionCTA861AudioDataBlockSamplingRate {
 }
 
 #[derive(Clone, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 #[builder(mutators(
     #[allow(unreachable_pub)]
     pub fn sampling_frequencies(&mut self, freqs: Vec<EdidExtensionCTA861AudioDataBlockSamplingFrequency>) {
@@ -96,12 +103,14 @@ pub struct EdidExtensionCTA861AudioDataBlockLPCM {
 }
 
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 pub enum EdidExtensionCTA861AudioDataBlockDesc {
     #[allow(clippy::upper_case_acronyms)]
     LPCM(EdidExtensionCTA861AudioDataBlockLPCM),
 }
 
 #[derive(Clone, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 #[builder(mutators(
     #[allow(unreachable_pub)]
     pub fn descriptors(&mut self, desc: Vec<EdidExtensionCTA861AudioDataBlockDesc>) {
@@ -113,6 +122,7 @@ pub enum EdidExtensionCTA861AudioDataBlockDesc {
         self.desc.push(desc);
     }
 ))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidExtensionCTA861AudioDataBlock {
     #[builder(via_mutators)]
     desc: Vec<EdidExtensionCTA861AudioDataBlockDesc>,
@@ -157,7 +167,9 @@ impl IntoBytes for EdidExtensionCTA861AudioDataBlock {
 }
 
 #[derive(Clone, Copy, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 #[builder(field_defaults(setter(strip_bool)))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidExtensionCTA861SpeakerAllocationDataBlock {
     front_left_front_right: bool,
     low_frequency_effects: bool,
@@ -285,7 +297,9 @@ impl IntoBytes for EdidExtensionCTA861SpeakerAllocationDataBlock {
 }
 
 #[derive(Clone, Copy, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 #[builder(field_defaults(default))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidExtensionCTA861ColorimetryDataBlock {
     xv_ycc_601: bool,
     xv_ycc_709: bool,
@@ -365,7 +379,38 @@ pub enum EdidExtensionCTA861VideoDataBlockDesc {
     High(u8),
 }
 
+#[cfg(feature = "serde")]
+impl<'de> Deserialize<'de> for EdidExtensionCTA861VideoDataBlockDesc {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(deny_unknown_fields)]
+        struct VicHelper {
+            vic: u8,
+            #[serde(default)]
+            native: Option<bool>,
+        }
+
+        let helper = VicHelper::deserialize(deserializer)?;
+
+        if helper.vic < 64 {
+            if let Some(native) = helper.native {
+                Ok(Self::Low(native, helper.vic))
+            } else {
+                Ok(Self::Low(false, helper.vic))
+            }
+        } else if helper.native.is_none() {
+            Ok(Self::High(helper.vic))
+        } else {
+            Err(de::Error::custom("VICs > 64 cannot be native."))
+        }
+    }
+}
+
 #[derive(Clone, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 #[builder(mutators(
     #[allow(unreachable_pub)]
     pub fn descriptors(&mut self, desc: Vec<EdidExtensionCTA861VideoDataBlockDesc>) {
@@ -387,6 +432,7 @@ pub enum EdidExtensionCTA861VideoDataBlockDesc {
             .push(EdidExtensionCTA861VideoDataBlockDesc::Low(true, vic));
     }
 ))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidExtensionCTA861VideoDataBlock {
     #[builder(via_mutators)]
     descriptors: Vec<EdidExtensionCTA861VideoDataBlockDesc>,
@@ -425,6 +471,8 @@ impl IntoBytes for EdidExtensionCTA861VideoDataBlock {
 }
 
 #[derive(Debug, Clone, Copy)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "String"))]
 pub struct CecAddress(u8, u8, u8, u8);
 
 impl TryFrom<[u8; 4]> for CecAddress {
@@ -463,6 +511,8 @@ impl TryFrom<String> for CecAddress {
 }
 
 #[derive(Debug, Clone, Copy)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "u16"))]
 pub struct EdidExtensionCTA861Hdmi14bTmdsRate(u16);
 
 impl TryFrom<u16> for EdidExtensionCTA861Hdmi14bTmdsRate {
@@ -478,6 +528,7 @@ impl TryFrom<u16> for EdidExtensionCTA861Hdmi14bTmdsRate {
 }
 
 #[derive(Clone, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 #[builder(mutators(
     #[allow(unreachable_pub)]
     pub fn add_vic(&mut self, vic: u8) {
@@ -489,6 +540,7 @@ impl TryFrom<u16> for EdidExtensionCTA861Hdmi14bTmdsRate {
         self.vics = vics;
     }
 ))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidExtensionCTA861Hdmi14bDataBlockVideo {
     #[builder(via_mutators)]
     vics: Vec<u8>,
@@ -497,31 +549,41 @@ pub struct EdidExtensionCTA861Hdmi14bDataBlockVideo {
 }
 
 #[derive(Clone, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidExtensionCTA861HdmiDataBlock {
     source_physical_address: CecAddress,
 
     #[builder(default)]
+    #[cfg_attr(feature = "serde", serde(default))]
     deep_color_30_bits: bool,
 
     #[builder(default)]
+    #[cfg_attr(feature = "serde", serde(default))]
     deep_color_36_bits: bool,
 
     #[builder(default)]
+    #[cfg_attr(feature = "serde", serde(default))]
     deep_color_48_bits: bool,
 
     #[builder(default)]
+    #[cfg_attr(feature = "serde", serde(default))]
     deep_color_ycbcr_444: bool,
 
     #[builder(default)]
+    #[cfg_attr(feature = "serde", serde(default))]
     dvi_dual: bool,
 
     #[builder(default)]
+    #[cfg_attr(feature = "serde", serde(default))]
     acp_isrc: bool,
 
     #[builder(default, setter(strip_option))]
+    #[cfg_attr(feature = "serde", serde(default))]
     max_tmds_rate_mhz: Option<EdidExtensionCTA861Hdmi14bTmdsRate>,
 
     #[builder(default, setter(strip_option))]
+    #[cfg_attr(feature = "serde", serde(default))]
     video: Option<EdidExtensionCTA861Hdmi14bDataBlockVideo>,
     // FIXME: Handle CNC
     // FIXME: Handle latencies
@@ -670,6 +732,8 @@ impl IntoBytes for EdidExtensionCTA861HdmiDataBlock {
 
 #[repr(u8)]
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum EdidExtensionCTA861VideoCapabilityQuantization {
     NoData,
     Selectable,
@@ -692,6 +756,8 @@ impl Default for EdidExtensionCTA861VideoCapabilityQuantization {
 
 #[repr(u8)]
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum EdidExtensionCTA861VideoCapabilityScanBehavior {
     NotSupported,
     Overscanned,
@@ -717,7 +783,10 @@ impl EdidExtensionCTA861VideoCapabilityScanBehavior {
 }
 
 #[derive(Clone, Copy, Debug, Default, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 #[builder(field_defaults(default))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidExtensionCTA861VideoCapabilityDataBlock {
     qy_quant: EdidExtensionCTA861VideoCapabilityQuantization,
     qs_quant: EdidExtensionCTA861VideoCapabilityQuantization,
@@ -755,11 +824,14 @@ impl IntoBytes for EdidExtensionCTA861VideoCapabilityDataBlock {
 }
 
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum EdidExtensionCTA861Revision3DataBlock {
     Audio(EdidExtensionCTA861AudioDataBlock),
     SpeakerAllocation(EdidExtensionCTA861SpeakerAllocationDataBlock),
     Colorimetry(EdidExtensionCTA861ColorimetryDataBlock),
     Video(EdidExtensionCTA861VideoDataBlock),
+    #[cfg_attr(feature = "serde", serde(rename = "hdmi"))]
     HDMI(EdidExtensionCTA861HdmiDataBlock),
     VideoCapability(EdidExtensionCTA861VideoCapabilityDataBlock),
 }
@@ -789,6 +861,7 @@ impl IntoBytes for EdidExtensionCTA861Revision3DataBlock {
 }
 
 #[derive(Clone, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 #[builder(mutators(
     #[allow(unreachable_pub)]
     pub fn data_blocks(&mut self, blocks: Vec<EdidExtensionCTA861Revision3DataBlock>) {
@@ -810,25 +883,32 @@ impl IntoBytes for EdidExtensionCTA861Revision3DataBlock {
         self.timings.push(dtd);
     }
 ))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidExtensionCTA861Revision3 {
     #[builder(default)]
+    #[cfg_attr(feature = "serde", serde(default))]
     ycbcr_422_supported: bool,
 
     #[builder(default)]
+    #[cfg_attr(feature = "serde", serde(default))]
     ycbcr_444_supported: bool,
 
     #[builder(default)]
+    #[cfg_attr(feature = "serde", serde(default))]
     audio_supported: bool,
 
     #[builder(default)]
+    #[cfg_attr(feature = "serde", serde(default))]
     underscan_it_formats_by_default: bool,
 
     native_formats: u8,
 
     #[builder(via_mutators)]
+    #[cfg_attr(feature = "serde", serde(default))]
     data_blocks: Vec<EdidExtensionCTA861Revision3DataBlock>,
 
     #[builder(via_mutators)]
+    #[cfg_attr(feature = "serde", serde(default))]
     timings: Vec<EdidDescriptorDetailedTiming>,
 }
 
@@ -904,6 +984,7 @@ impl IntoBytes for EdidExtensionCTA861Revision3 {
 }
 
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 pub enum EdidExtensionCTA861 {
     Revision3(EdidExtensionCTA861Revision3),
 }
@@ -923,6 +1004,7 @@ impl IntoBytes for EdidExtensionCTA861 {
 }
 
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 pub enum EdidExtension {
     CTA861(EdidExtensionCTA861),
 }

@@ -1,4 +1,6 @@
 use bon::Builder;
+#[cfg(feature = "serde")]
+use serde::Deserialize;
 
 use crate::{
     EdidDescriptorDetailedTiming, EdidDescriptorString, EdidEstablishedTiming, EdidExtension,
@@ -8,11 +10,15 @@ use crate::{
 };
 
 #[derive(Builder, Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct HdmiEdid {
     #[builder(field)]
+    #[cfg_attr(feature = "serde", serde(default))]
     descriptors: Vec<EdidR3Descriptor>,
 
     #[builder(field)]
+    #[cfg_attr(feature = "serde", serde(default))]
     extensions: Vec<EdidExtension>,
 
     manufacturer: EdidManufacturer,
