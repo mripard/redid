@@ -885,6 +885,28 @@ impl TryFrom<EdidDisplayRangePixelClock> for EdidR4DisplayRangeVideoTimingsCVTPi
     }
 }
 
+impl TryFrom<u16> for EdidR4DisplayRangeVideoTimingsCVTPixelClockDiff {
+    type Error = EdidTypeConversionError<u16>;
+
+    fn try_from(value: u16) -> Result<Self, Self::Error> {
+        let clock = EdidDisplayRangePixelClock::try_from(value)?;
+
+        match EdidR4DisplayRangeVideoTimingsCVTPixelClockDiff::try_from(clock) {
+            Ok(v) => Ok(v),
+            Err(e) => match e {
+                EdidTypeConversionError::Int(ie) => Err(Self::Error::Int(ie)),
+                EdidTypeConversionError::Slice(se) => Err(Self::Error::Slice(se)),
+                EdidTypeConversionError::Range(a, b, c) => Err(Self::Error::Range(
+                    a.into(),
+                    b.map(Into::into),
+                    c.map(Into::into),
+                )),
+                EdidTypeConversionError::Value(v) => Err(Self::Error::Value(v)),
+            },
+        }
+    }
+}
+
 impl EdidR4DisplayRangeVideoTimingsCVTPixelClockDiff {
     fn into_raw(self) -> u8 {
         self.0 * 4

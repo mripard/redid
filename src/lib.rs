@@ -1859,7 +1859,11 @@ impl From<EdidRelease3> for Edid {
             chroma_coord: value.filter_chromaticity,
             established_timings: value.established_timings,
             standard_timings: value.standard_timings,
-            descriptors: value.descriptors,
+            descriptors: value
+                .descriptors
+                .into_iter()
+                .map(EdidDescriptor::R3)
+                .collect(),
             extensions: value.extensions,
         }
     }
@@ -1877,7 +1881,11 @@ impl From<EdidRelease4> for Edid {
             chroma_coord: value.filter_chromaticity,
             established_timings: value.established_timings,
             standard_timings: value.standard_timings,
-            descriptors: value.descriptors,
+            descriptors: value
+                .descriptors
+                .into_iter()
+                .map(EdidDescriptor::R4)
+                .collect(),
             extensions: value.extensions,
         }
     }
@@ -1887,12 +1895,12 @@ impl From<EdidRelease4> for Edid {
 #[builder(mutators(
     #[allow(unreachable_pub)]
     pub fn descriptors(&mut self, d: Vec<EdidR3Descriptor>) {
-        self.descriptors = d.into_iter().map(EdidDescriptor::R3).collect();
+        self.descriptors = d;
     }
 
     #[allow(unreachable_pub)]
     pub fn add_descriptor(&mut self, d: EdidR3Descriptor) {
-        self.descriptors.push(EdidDescriptor::R3(d));
+        self.descriptors.push(d);
     }
 
     #[allow(unreachable_pub)]
@@ -1948,7 +1956,7 @@ pub struct EdidRelease3 {
     // FIXME: Monitor Name is mandatory
     // FIXME: Display Range Limits is mandatory
     #[builder(via_mutators)]
-    descriptors: Vec<EdidDescriptor>,
+    descriptors: Vec<EdidR3Descriptor>,
 
     #[builder(via_mutators)]
     extensions: Vec<EdidExtension>,
@@ -1977,12 +1985,12 @@ impl IntoBytes for EdidRelease3 {
 #[builder(mutators(
     #[allow(unreachable_pub)]
     pub fn descriptors(&mut self, d: Vec<EdidR4Descriptor>) {
-        self.descriptors = d.into_iter().map(EdidDescriptor::R4).collect();
+        self.descriptors = d;
     }
 
     #[allow(unreachable_pub)]
     pub fn add_descriptor(&mut self, d: EdidR4Descriptor) {
-        self.descriptors.push(EdidDescriptor::R4(d));
+        self.descriptors.push(d);
     }
 
     #[allow(unreachable_pub)]
@@ -2037,7 +2045,7 @@ pub struct EdidRelease4 {
     // FIXME: The Preferred Timing Descriptors is required in the first position
     // FIXME: If continuous frequency, a display range limits descriptor is required
     #[builder(via_mutators)]
-    descriptors: Vec<EdidDescriptor>,
+    descriptors: Vec<EdidR4Descriptor>,
 
     #[builder(via_mutators)]
     extensions: Vec<EdidExtension>,
