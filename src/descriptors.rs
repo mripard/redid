@@ -14,7 +14,7 @@ fn compute_max_value<T>(num_bits: usize) -> T
 where
     T: Num + Bounded + CheckedShl + WrappingSub,
 {
-    let type_num_bits = core::mem::size_of::<T>() * 8;
+    let type_num_bits = size_of::<T>() * 8;
 
     assert!(
         num_bits <= type_num_bits,
