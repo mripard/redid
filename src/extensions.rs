@@ -369,12 +369,12 @@ pub enum EdidExtensionCTA861VideoDataBlockDesc {
 #[builder(mutators(
     #[allow(unreachable_pub)]
     pub fn descriptors(&mut self, desc: Vec<EdidExtensionCTA861VideoDataBlockDesc>) {
-        self.desc = desc;
+        self.descriptors = desc;
     }
 
     #[allow(unreachable_pub)]
     pub fn add_short_video_descriptor(&mut self, vic: u8) {
-        self.desc.push(if vic < 64 {
+        self.descriptors.push(if vic < 64 {
             EdidExtensionCTA861VideoDataBlockDesc::Low(false, vic)
         } else {
             EdidExtensionCTA861VideoDataBlockDesc::High(vic)
@@ -383,13 +383,13 @@ pub enum EdidExtensionCTA861VideoDataBlockDesc {
 
     #[allow(unreachable_pub)]
     pub fn add_native_short_video_descriptor(&mut self, vic: u8) {
-        self.desc
+        self.descriptors
             .push(EdidExtensionCTA861VideoDataBlockDesc::Low(true, vic));
     }
 ))]
 pub struct EdidExtensionCTA861VideoDataBlock {
     #[builder(via_mutators)]
-    desc: Vec<EdidExtensionCTA861VideoDataBlockDesc>,
+    descriptors: Vec<EdidExtensionCTA861VideoDataBlockDesc>,
 }
 
 impl IntoBytes for EdidExtensionCTA861VideoDataBlock {
@@ -402,7 +402,7 @@ impl IntoBytes for EdidExtensionCTA861VideoDataBlock {
 
         data.push(2 << 5 | size);
 
-        for desc in &self.desc {
+        for desc in &self.descriptors {
             match desc {
                 EdidExtensionCTA861VideoDataBlockDesc::Low(native, vic) => {
                     let byte = if *native { 1 << 7 | vic } else { *vic };
@@ -420,7 +420,7 @@ impl IntoBytes for EdidExtensionCTA861VideoDataBlock {
 
     fn size(&self) -> usize {
         EDID_EXTENSION_CTA_861_DATA_BLOCK_HEADER_LEN
-            + (EDID_EXTENSION_CTA_861_VIDEO_DESCRIPTOR_LEN * self.desc.len())
+            + (EDID_EXTENSION_CTA_861_VIDEO_DESCRIPTOR_LEN * self.descriptors.len())
     }
 }
 
