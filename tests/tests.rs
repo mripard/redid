@@ -264,7 +264,7 @@ fn decode_basic_display_release_3(basic_display: &Value) -> EdidR3BasicDisplayPa
     EdidR3BasicDisplayParametersFeatures::builder()
         .video_input(decode_video_input_release_3(basic_display))
         .size(decode_size_release_3(basic_display))
-        .display_transfer_characteristic(gamma)
+        .display_transfer_characteristics(gamma)
         .feature_support(decode_feature_support_release_3(basic_display))
         .build()
 }

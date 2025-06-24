@@ -1023,7 +1023,7 @@ pub struct EdidR3BasicDisplayParametersFeatures {
     size: EdidR3ImageSize,
 
     #[builder(setter(into))]
-    display_transfer_characteristic: EdidDisplayTransferCharacteristics,
+    display_transfer_characteristics: EdidDisplayTransferCharacteristics,
 
     feature_support: EdidR3FeatureSupport,
 }
@@ -1034,7 +1034,7 @@ impl IntoBytes for EdidR3BasicDisplayParametersFeatures {
 
         bytes.extend_from_slice(&self.video_input.into_bytes());
         bytes.extend_from_slice(&self.size.into_bytes());
-        bytes.extend_from_slice(&self.display_transfer_characteristic.into_bytes());
+        bytes.extend_from_slice(&self.display_transfer_characteristics.into_bytes());
         bytes.extend_from_slice(&self.feature_support.into_bytes());
 
         let len = bytes.len();
