@@ -5,9 +5,6 @@ use crate::{
     utils::div_round_up, EdidDescriptorDetailedTiming, EdidTypeConversionError, IntoBytes,
 };
 
-const UNIT_KHZ: usize = 1000;
-const UNIT_MHZ: usize = 1000 * UNIT_KHZ;
-
 const EDID_EXTENSION_CTA_861_LEN: usize = 128;
 
 const EDID_EXTENSION_CTA_861_DATA_BLOCK_HEADER_LEN: usize = 1;
@@ -501,7 +498,7 @@ pub struct EdidExtensionCTA861HdmiDataBlock {
     acp_isrc: bool,
 
     #[builder(default, setter(strip_option))]
-    max_tmds_rate: Option<EdidExtensionCTA861Hdmi14bTmdsRate>,
+    max_tmds_rate_mhz: Option<EdidExtensionCTA861Hdmi14bTmdsRate>,
 
     #[builder(default, setter(strip_option))]
     video: Option<EdidExtensionCTA861Hdmi14bDataBlockVideo>,
@@ -526,7 +523,7 @@ impl IntoBytes for EdidExtensionCTA861HdmiDataBlock {
         // FIXME: Handle latencies and CNC
         if self.video.is_some() {
             data.resize(9, 0);
-        } else if self.max_tmds_rate.is_some() {
+        } else if self.max_tmds_rate_mhz.is_some() {
             data.resize(8, 0);
         } else if self.acp_isrc
             || self.deep_color_30_bits
@@ -572,8 +569,8 @@ impl IntoBytes for EdidExtensionCTA861HdmiDataBlock {
         if data.len() > 7 {
             let mut byte = 0;
 
-            if let Some(val) = self.max_tmds_rate {
-                let rate = div_round_up(&(val.0 as usize), &(5 * UNIT_MHZ))
+            if let Some(val) = self.max_tmds_rate_mhz {
+                let rate = div_round_up(&(val.0 as usize), &5)
                     .to_u8()
                     .expect("Rate would overflow our type");
 
@@ -625,7 +622,7 @@ impl IntoBytes for EdidExtensionCTA861HdmiDataBlock {
         // FIXME: Handle latencies and CNC
         if self.video.is_some() {
             size += 3;
-        } else if self.max_tmds_rate.is_some() {
+        } else if self.max_tmds_rate_mhz.is_some() {
             size += 2;
         } else if self.acp_isrc
             || self.deep_color_30_bits
