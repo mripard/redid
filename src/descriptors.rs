@@ -473,7 +473,7 @@ pub struct EdidDescriptorDetailedTimingHorizontal {
     back_porch: EdidDescriptor12BitsTiming,
     #[builder(default)]
     border: EdidDescriptor8BitsTiming,
-    size: EdidDetailedTimingSizeMm,
+    size_mm: EdidDetailedTimingSizeMm,
 }
 
 #[derive(Clone, Copy, Debug, TypedBuilder)]
@@ -484,7 +484,7 @@ pub struct EdidDescriptorDetailedTimingVertical {
     back_porch: EdidDescriptor12BitsTiming,
     #[builder(default)]
     border: EdidDescriptor8BitsTiming,
-    size: EdidDetailedTimingSizeMm,
+    size_mm: EdidDetailedTimingSizeMm,
 }
 
 #[derive(Clone, Copy, Debug, TypedBuilder)]
@@ -560,11 +560,11 @@ impl IntoBytes for EdidDescriptorDetailedTiming {
         let vblank_lo = (vblank & 0xff) as u8;
         let vblank_hi = ((vblank >> 8) & 0xf) as u8;
 
-        let hsize = self.horizontal.size.into_raw();
+        let hsize = self.horizontal.size_mm.into_raw();
         let hsize_lo = (hsize & 0xff) as u8;
         let hsize_hi = ((hsize >> 8) & 0xf) as u8;
 
-        let vsize = self.vertical.size.into_raw();
+        let vsize = self.vertical.size_mm.into_raw();
         let vsize_lo = (vsize & 0xff) as u8;
         let vsize_hi = ((vsize >> 8) & 0xf) as u8;
 

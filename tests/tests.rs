@@ -865,7 +865,7 @@ fn decode_descriptor_dtd(desc: &Value) -> EdidDescriptorDetailedTiming {
                 .sync_pulse(hsync)
                 .back_porch(hbp)
                 .border(hborder)
-                .size(hsize)
+                .size_mm(hsize)
                 .build(),
         )
         .vertical(
@@ -875,7 +875,7 @@ fn decode_descriptor_dtd(desc: &Value) -> EdidDescriptorDetailedTiming {
                 .sync_pulse(vsync)
                 .back_porch(vbp)
                 .border(vborder)
-                .size(vsize)
+                .size_mm(vsize)
                 .build(),
         )
         .build()
