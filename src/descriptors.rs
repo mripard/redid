@@ -304,6 +304,15 @@ pub enum EdidDetailedTimingStereo {
 #[derive(Clone, Copy, Debug)]
 pub struct EdidDescriptorTiming<const N: usize, T: fmt::Display>(T);
 
+impl<const N: usize, T> Default for EdidDescriptorTiming<N, T>
+where
+    T: Num + fmt::Display,
+{
+    fn default() -> Self {
+        Self(T::zero())
+    }
+}
+
 impl<const N: usize, T> EdidDescriptorTiming<N, T>
 where
     T: Num + Bounded + CheckedShl + WrappingSub + PartialOrd + fmt::Display,
@@ -323,7 +332,7 @@ where
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct EdidDescriptor6BitsTiming(EdidDescriptorTiming<6, u8>);
 
 impl EdidDescriptor6BitsTiming {
@@ -353,7 +362,7 @@ mod test_edid_detailed_timings_6bits_fields {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct EdidDescriptor8BitsTiming(EdidDescriptorTiming<8, u8>);
 
 impl EdidDescriptor8BitsTiming {
@@ -381,7 +390,7 @@ mod test_edid_detailed_timings_8bits_fields {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct EdidDescriptor10BitsTiming(EdidDescriptorTiming<10, u16>);
 
 impl EdidDescriptor10BitsTiming {
@@ -411,7 +420,7 @@ mod test_edid_detailed_timings_10bits_fields {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct EdidDescriptor12BitsTiming(EdidDescriptorTiming<12, u16>);
 
 impl EdidDescriptor12BitsTiming {
