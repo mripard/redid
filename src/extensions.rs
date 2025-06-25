@@ -437,7 +437,7 @@ impl TryFrom<[u8; 4]> for CecAddress {
             }
         }
 
-        Ok(Self(value[0], value[1], value[2], value[2]))
+        Ok(Self(value[0], value[1], value[2], value[3]))
     }
 }
 
