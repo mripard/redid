@@ -468,9 +468,10 @@ mod test_edid_detailed_timings_size {
 #[derive(Clone, Copy, Debug, TypedBuilder)]
 pub struct EdidDescriptorDetailedTimingHorizontal {
     active: EdidDescriptor12BitsTiming,
-    blanking: EdidDescriptor12BitsTiming,
     front_porch: EdidDescriptor10BitsTiming,
     sync_pulse: EdidDescriptor10BitsTiming,
+    back_porch: EdidDescriptor12BitsTiming,
+    #[builder(default)]
     border: EdidDescriptor8BitsTiming,
     size: EdidDetailedTimingSizeMm,
 }
@@ -478,9 +479,10 @@ pub struct EdidDescriptorDetailedTimingHorizontal {
 #[derive(Clone, Copy, Debug, TypedBuilder)]
 pub struct EdidDescriptorDetailedTimingVertical {
     active: EdidDescriptor12BitsTiming,
-    blanking: EdidDescriptor12BitsTiming,
     front_porch: EdidDescriptor6BitsTiming,
     sync_pulse: EdidDescriptor6BitsTiming,
+    back_porch: EdidDescriptor12BitsTiming,
+    #[builder(default)]
     border: EdidDescriptor8BitsTiming,
     size: EdidDetailedTimingSizeMm,
 }
@@ -502,56 +504,61 @@ pub struct EdidDescriptorDetailedTiming {
 impl IntoBytes for EdidDescriptorDetailedTiming {
     #[allow(clippy::too_many_lines)]
     fn into_bytes(self) -> Vec<u8> {
-        let mut data = Vec::with_capacity(EDID_DESCRIPTOR_LEN);
-
         let freq = self.pixel_clock.into_raw();
-        let lo_freq = (freq & 0xff) as u8;
-        let hi_freq = ((freq >> 8) & 0xff) as u8;
+        let freq_lo = (freq & 0xff) as u8;
+        let freq_hi = ((freq >> 8) & 0xff) as u8;
 
-        data.extend_from_slice(&[lo_freq, hi_freq]);
+        let hact = self.horizontal.active.into_raw();
+        let hact_lo = (hact & 0xff) as u8;
+        let hact_hi = ((hact >> 8) & 0xf) as u8;
 
-        let haddr = self.horizontal.active.into_raw();
-        let haddr_lo = (haddr & 0xff) as u8;
-        let haddr_hi = ((haddr >> 8) & 0xf) as u8;
-
-        let hblank = self.horizontal.blanking.into_raw();
-        let hblank_lo = (hblank & 0xff) as u8;
-        let hblank_hi = ((hblank >> 8) & 0xf) as u8;
-
-        data.extend_from_slice(&[haddr_lo, hblank_lo, (haddr_hi << 4) | hblank_hi]);
-
-        let vaddr = self.vertical.active.into_raw();
-        let vaddr_lo = (vaddr & 0xff) as u8;
-        let vaddr_hi = ((vaddr >> 8) & 0xf) as u8;
-
-        let vblank = self.vertical.blanking.into_raw();
-        let vblank_lo = (vblank & 0xff) as u8;
-        let vblank_hi = ((vblank >> 8) & 0xf) as u8;
-
-        data.extend_from_slice(&[vaddr_lo, vblank_lo, (vaddr_hi << 4) | vblank_hi]);
-
+        let hborder = self.horizontal.border.into_raw();
         let hfp = self.horizontal.front_porch.into_raw();
-        let hfp_lo = (hfp & 0xff) as u8;
-        let hfp_hi = ((hfp >> 8) & 0x3) as u8;
+        let hso = u16::from(hborder) + hfp;
+        let _: EdidDescriptor10BitsTiming = EdidDescriptor10BitsTiming::try_from(hso)
+            .expect("Horizontal Front Porch and Border don't fit into 10 bits.");
+
+        let hso_lo = (hso & 0xff) as u8;
+        let hso_hi = ((hso >> 8) & 0x3) as u8;
 
         let hsync = self.horizontal.sync_pulse.into_raw();
         let hsync_lo = (hsync & 0xff) as u8;
         let hsync_hi = ((hsync >> 8) & 0x3) as u8;
 
+        let hbp = self.horizontal.back_porch.into_raw();
+        let hblank = hso + hsync + hbp + u16::from(hborder);
+        let _: EdidDescriptor12BitsTiming = EdidDescriptor12BitsTiming::try_from(hblank).expect(
+            "Horizontal Front Porch, Back Porch, Sync Pulse and Borders don't fit into 12 bits.",
+        );
+
+        let hblank_lo = (hblank & 0xff) as u8;
+        let hblank_hi = ((hblank >> 8) & 0xf) as u8;
+
+        let vact = self.vertical.active.into_raw();
+        let vact_lo = (vact & 0xff) as u8;
+        let vact_hi = ((vact >> 8) & 0xf) as u8;
+
+        let vborder = self.vertical.border.into_raw();
         let vfp = self.vertical.front_porch.into_raw();
-        let vfp_lo = vfp & 0xf;
-        let vfp_hi = (vfp >> 4) & 0x3;
+        let vso = vborder + vfp;
+        let _: EdidDescriptor6BitsTiming = EdidDescriptor6BitsTiming::try_from(vso)
+            .expect("Vertical Front Porch and Border don't fit into 6 bits.");
+
+        let vso_lo = vso & 0xf;
+        let vso_hi = (vso >> 4) & 0x3;
 
         let vsync = self.vertical.sync_pulse.into_raw();
         let vsync_lo = vsync & 0xf;
         let vsync_hi = (vsync >> 4) & 0x3;
 
-        data.extend_from_slice(&[
-            hfp_lo,
-            hsync_lo,
-            (vfp_lo << 4) | vsync_lo,
-            (hfp_hi << 6) | (hsync_hi << 4) | (vfp_hi << 2) | vsync_hi,
-        ]);
+        let vbp = self.vertical.back_porch.into_raw();
+        let vblank = u16::from(vso) + u16::from(vsync) + vbp + u16::from(vborder);
+        let _: EdidDescriptor12BitsTiming = EdidDescriptor12BitsTiming::try_from(vblank).expect(
+            "Horizontal Front Porch, Back Porch, Sync Pulse and Borders don't fit into 12 bits.",
+        );
+
+        let vblank_lo = (vblank & 0xff) as u8;
+        let vblank_hi = ((vblank >> 8) & 0xf) as u8;
 
         let hsize = self.horizontal.size.into_raw();
         let hsize_lo = (hsize & 0xff) as u8;
@@ -560,8 +567,6 @@ impl IntoBytes for EdidDescriptorDetailedTiming {
         let vsize = self.vertical.size.into_raw();
         let vsize_lo = (vsize & 0xff) as u8;
         let vsize_hi = ((vsize >> 8) & 0xf) as u8;
-
-        data.extend_from_slice(&[hsize_lo, vsize_lo, (hsize_hi << 4) | vsize_hi]);
 
         let mut flags: u8 = 0;
 
@@ -628,19 +633,28 @@ impl IntoBytes for EdidDescriptorDetailedTiming {
             }
         }
 
-        data.extend_from_slice(&[
-            self.horizontal.border.into_raw(),
-            self.vertical.border.into_raw(),
+        let data: [u8; EDID_DESCRIPTOR_LEN] = [
+            freq_lo,
+            freq_hi,
+            hact_lo,
+            hblank_lo,
+            (hact_hi << 4) | hblank_hi,
+            vact_lo,
+            vblank_lo,
+            (vact_hi << 4) | vblank_hi,
+            hso_lo,
+            hsync_lo,
+            (vso_lo << 4) | vsync_lo,
+            (hso_hi << 6) | (hsync_hi << 4) | (vso_hi << 2) | vsync_hi,
+            hsize_lo,
+            vsize_lo,
+            (hsize_hi << 4) | vsize_hi,
+            hborder,
+            vborder,
             flags,
-        ]);
+        ];
 
-        let len = data.len();
-        assert_eq!(
-            len, EDID_DESCRIPTOR_LEN,
-            "Descriptor is larger than it should ({len} vs expected {EDID_DESCRIPTOR_LEN} bytes)",
-        );
-
-        data
+        data.to_vec()
     }
 
     fn size(&self) -> usize {

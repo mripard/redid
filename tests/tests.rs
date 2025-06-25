@@ -665,13 +665,9 @@ fn decode_descriptor_dtd(desc: &Value) -> EdidDescriptorDetailedTiming {
         .as_u64()
         .expect("Couldn't decode Descriptor Blanking X size") as u16;
 
-    let hblank = hblank_raw.try_into().unwrap();
-
     let vblank_raw = blanking["y"]
         .as_u64()
         .expect("Couldn't decode Descriptor Blanking y size") as u16;
-
-    let vblank = vblank_raw.try_into().unwrap();
 
     let border = desc["Border"]
         .as_object()
@@ -720,6 +716,16 @@ fn decode_descriptor_dtd(desc: &Value) -> EdidDescriptorDetailedTiming {
         .expect("Couldn't decode Descriptor Sync y size") as u8;
 
     let vsync = vsync_raw.try_into().unwrap();
+
+    let hbp_raw =
+        hblank_raw - (hfp_raw + u16::from(hborder_raw)) - hsync_raw - u16::from(hborder_raw);
+    let hbp = hbp_raw.try_into().unwrap();
+
+    let vbp_raw = vblank_raw
+        - (u16::from(vfp_raw) + u16::from(vborder_raw))
+        - u16::from(vsync_raw)
+        - u16::from(vborder_raw);
+    let vbp = vbp_raw.try_into().unwrap();
 
     let size = desc["Image size (mm)"]
         .as_object()
@@ -857,7 +863,7 @@ fn decode_descriptor_dtd(desc: &Value) -> EdidDescriptorDetailedTiming {
                 .active(hdisplay)
                 .front_porch(hfp)
                 .sync_pulse(hsync)
-                .blanking(hblank)
+                .back_porch(hbp)
                 .border(hborder)
                 .size(hsize)
                 .build(),
@@ -867,7 +873,7 @@ fn decode_descriptor_dtd(desc: &Value) -> EdidDescriptorDetailedTiming {
                 .active(vdisplay)
                 .front_porch(vfp)
                 .sync_pulse(vsync)
-                .blanking(vblank)
+                .back_porch(vbp)
                 .border(vborder)
                 .size(vsize)
                 .build(),

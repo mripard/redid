@@ -2215,9 +2215,9 @@ mod test_edid_release4 {
                         .horizontal(
                             EdidDescriptorDetailedTimingHorizontal::builder()
                                 .active(EdidDescriptor12BitsTiming::try_from(1600).unwrap())
-                                .blanking(EdidDescriptor12BitsTiming::try_from(560).unwrap())
                                 .front_porch(EdidDescriptor10BitsTiming::try_from(64).unwrap())
                                 .sync_pulse(EdidDescriptor10BitsTiming::try_from(192).unwrap())
+                                .back_porch(EdidDescriptor12BitsTiming::try_from(304).unwrap())
                                 .size(EdidDetailedTimingSizeMm::try_from(427).unwrap())
                                 .border(EdidDescriptor8BitsTiming::try_from(0).unwrap())
                                 .build(),
@@ -2225,9 +2225,9 @@ mod test_edid_release4 {
                         .vertical(
                             EdidDescriptorDetailedTimingVertical::builder()
                                 .active(EdidDescriptor12BitsTiming::try_from(1200).unwrap())
-                                .blanking(EdidDescriptor12BitsTiming::try_from(50).unwrap())
                                 .front_porch(EdidDescriptor6BitsTiming::try_from(1).unwrap())
                                 .sync_pulse(EdidDescriptor6BitsTiming::try_from(3).unwrap())
+                                .back_porch(EdidDescriptor12BitsTiming::try_from(46).unwrap())
                                 .size(EdidDetailedTimingSizeMm::try_from(320).unwrap())
                                 .border(EdidDescriptor8BitsTiming::try_from(0).unwrap())
                                 .build(),
