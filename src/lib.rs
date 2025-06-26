@@ -4,28 +4,23 @@
 
 // FIXME: Write all the doc
 #![allow(missing_docs)]
-#![cfg_attr(
-    feature = "nightly",
-    feature(
-        type_privacy_lints,
-        non_exhaustive_omitted_patterns_lint,
-        strict_provenance
-    )
+#![expect(
+    clippy::doc_nested_refdefs,
+    reason = "Markdown Checklists seem to confuse clippy"
 )]
-#![cfg_attr(
-    feature = "nightly",
-    warn(
-        fuzzy_provenance_casts,
-        lossy_provenance_casts,
-        unnameable_types,
-        non_exhaustive_omitted_patterns,
-    )
+#![expect(
+    clippy::similar_names,
+    reason = "We do have similar names. It's kind of expected."
+)]
+#![expect(
+    clippy::struct_excessive_bools,
+    reason = "We do indeed have structures with plenty of bools. There's not much we can do about it."
 )]
 #![doc = include_str!("../README.md")]
 
 use core::{array, fmt, num};
 
-use num_traits::ToPrimitive;
+use num_traits::ToPrimitive as _;
 use static_assertions::const_assert_eq;
 use typed_builder::TypedBuilder;
 
@@ -180,8 +175,8 @@ impl<D: fmt::Display> fmt::Display for EdidTypeConversionError<D> {
     }
 }
 
-impl<D: fmt::Display + fmt::Debug> std::error::Error for EdidTypeConversionError<D> {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+impl<D: fmt::Display + fmt::Debug> core::error::Error for EdidTypeConversionError<D> {
+    fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
         match self {
             EdidTypeConversionError::Int(e) => Some(e),
             EdidTypeConversionError::Slice(e) => Some(e),
@@ -1615,7 +1610,7 @@ impl IntoBytes for Vec<EdidEstablishedTiming> {
                 EdidEstablishedTiming::Manufacturer4 => byte2 |= 1 << 4,
                 EdidEstablishedTiming::Manufacturer5 => byte2 |= 1 << 5,
                 EdidEstablishedTiming::Manufacturer6 => byte2 |= 1 << 6,
-            };
+            }
         }
 
         let bytes = Vec::from(&[byte0, byte1, byte2]);
@@ -1709,7 +1704,7 @@ impl IntoBytes for Vec<EdidStandardTiming> {
                     bytes.extend_from_slice(&[byte0, byte1]);
                 }
                 None => bytes.extend_from_slice(&[0x01, 0x01]),
-            };
+            }
         }
 
         let len = bytes.len();
