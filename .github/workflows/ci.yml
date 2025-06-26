@@ -2,33 +2,86 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
 
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build_and_test:
-    name: Build and Test
+  build:
+    name: Build
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        toolchain:
-          - stable
-          - nightly
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Build
+        uses: "actions-rs/cargo@v1"
+        with:
+          command: build
+          args: --workspace --all-features --benches --bins --lib --examples --verbose
+
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+
+    permissions:
+      checks: write
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: clippy
+          override: true
+
+      - name: Check clippy
+        uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --workspace --all-features
+
+  format:
+    name: Rustfmt
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          components: rustfmt
+          override: true
+
+      - name: Check Format
+        uses: "actions-rs/cargo@v1"
+        with:
+          command: "fmt"
+          args: "--all -- --check"
+
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
 
     steps:
       - name: Install required packages
-        run: sudo apt-get install -y edid-decode
+        run: |
+          sudo apt-get install -y edid-decode
 
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: ${{ matrix.toolchain }}
+          toolchain: stable
           override: true
 
       - name: Setup Test EDIDs
@@ -41,29 +94,15 @@ jobs:
           curl -sfL https://raw.githubusercontent.com/linuxhw/EDID/master/Digital/Dell/DEL4098/C3BA37F18DB7 -o tests/edid-db/linuxhw/linuxhw-C3BA37F18DB7.edid
           edid-decode -o raw - tests/edid-db/linuxhw/linuxhw-C3BA37F18DB7.bin < tests/edid-db/linuxhw/linuxhw-C3BA37F18DB7.edid
 
-      - name: Build
-        uses: "actions-rs/cargo@v1"
-        with:
-          command: build
-          args: ${{ matrix.toolchain == 'nightly' && '--all-features' || '' }} --all-targets --verbose
-
-      - name: Check for unused dependencies
-        uses: aig787/cargo-udeps-action@v1
-        if: matrix.toolchain == 'nightly'
-        with:
-          version: latest
-          args: --all-targets
-
       - name: Run Tests
         uses: "actions-rs/cargo@v1"
         with:
           command: test
-          args: ${{ matrix.toolchain == 'nightly' && '--all-features' || '' }} --all-targets --verbose
+          args: --workspace --all-features --verbose
 
   dependabot:
     runs-on: ubuntu-latest
-    needs:
-      - build_and_test
+    needs: [ clippy, format, build, tests ]
 
     permissions:
       pull-requests: write
