@@ -53,9 +53,14 @@ jobs:
           components: rustfmt
 
       - uses: mbrobbel/rustfmt-check@master
+        if: github.event_name == 'pull_request'
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           mode: review
+
+      - if: github.event_name == 'push'
+        run: |
+          cargo fmt --all -- --check
 
   tests:
     name: Tests
