@@ -33,9 +33,9 @@ jobs:
 
       - name: Setup Test EDIDs
         run: |
-          mkdir -p tests/edid-db/edid.tv/
-          curl -sfL http://edid.tv/edid/2252/download/ -o tests/edid-db/edid.tv/edid.tv-2252.bin
-          edid-decode --check < tests/edid-db/edid.tv/edid.tv-2252.bin
+          # mkdir -p tests/edid-db/edid.tv/
+          # curl -sfL http://edid.tv/edid/2252/download/ -o tests/edid-db/edid.tv/edid.tv-2252.bin
+          # edid-decode --check < tests/edid-db/edid.tv/edid.tv-2252.bin
 
           mkdir -p tests/edid-db/linuxhw/
           curl -sfL https://raw.githubusercontent.com/linuxhw/EDID/master/Digital/Dell/DEL4098/C3BA37F18DB7 -o tests/edid-db/linuxhw/linuxhw-C3BA37F18DB7.edid

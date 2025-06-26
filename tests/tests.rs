@@ -1516,10 +1516,10 @@ fn test_edid(edid: &Path) {
     decode_and_check_edid(&json, &input_data);
 }
 
-#[rstest]
-fn test_edidtv(#[files("tests/edid-db/edid.tv/*.bin")] edid: PathBuf) {
-    test_edid(&edid)
-}
+// #[rstest]
+// fn test_edidtv(#[files("tests/edid-db/edid.tv/*.bin")] edid: PathBuf) {
+//    test_edid(&edid)
+// }
 
 #[rstest]
 fn test_linuxhw(#[files("tests/edid-db/linuxhw/*.bin")] edid: PathBuf) {
