@@ -21,10 +21,8 @@ jobs:
       - uses: actions/checkout@v2
       - uses: dtolnay/rust-toolchain@stable
       - name: Build
-        uses: "actions-rs/cargo@v1"
-        with:
-          command: build
-          args: --workspace --all-features --benches --bins --lib --examples --verbose
+        run: |
+          cargo build --workspace --all-features --benches --bins --lib --examples --verbose
 
   clippy:
     name: Clippy
@@ -82,10 +80,8 @@ jobs:
           edid-decode -o raw - tests/edid-db/linuxhw/linuxhw-C3BA37F18DB7.bin < tests/edid-db/linuxhw/linuxhw-C3BA37F18DB7.edid
 
       - name: Run Tests
-        uses: "actions-rs/cargo@v1"
-        with:
-          command: test
-          args: --workspace --all-features --verbose
+        run: |
+          cargo test --workspace --all-features --verbose
 
   dependabot:
     runs-on: ubuntu-latest
