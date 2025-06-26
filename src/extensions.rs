@@ -1,4 +1,4 @@
-use num_traits::ToPrimitive;
+use num_traits::ToPrimitive as _;
 use typed_builder::TypedBuilder;
 
 use crate::{
@@ -644,7 +644,7 @@ impl IntoBytes for EdidExtensionCTA861HdmiDataBlock {
             size += val.vics.len();
 
             // FIXME: Handle 3d
-        };
+        }
 
         size
     }

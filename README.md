@@ -81,7 +81,7 @@ This crate is aimed at providing a typesafe abstraction to generate EDIDs.
       - [ ] Vendor-Specific Audio Data Block
       - [ ] Room Configuration Data Block
       - [ ] Speaker Location Data Block
-      - [ ] InfoFrame Data Block
+      - [ ] `InfoFrame` Data Block
 
 ### Type Safety
 

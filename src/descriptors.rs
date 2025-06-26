@@ -1,7 +1,7 @@
 use core::{cmp, fmt};
 
-use encoding::{all::ISO_8859_1, EncoderTrap, Encoding};
-use num_traits::{Bounded, CheckedShl, Num, ToPrimitive, WrappingSub};
+use encoding::{all::ISO_8859_1, EncoderTrap, Encoding as _};
+use num_traits::{Bounded, CheckedShl, Num, ToPrimitive as _, WrappingSub};
 use typed_builder::TypedBuilder;
 
 use crate::{
@@ -578,7 +578,7 @@ impl IntoBytes for EdidDescriptorDetailedTiming {
                             flags |= 1 << 2;
                         }
                     }
-                };
+                }
 
                 if v.hsync_positive {
                     flags |= 1 << 1;
@@ -761,7 +761,7 @@ impl IntoBytes for EdidR3DisplayRangeLimits {
                     g.blanking_scaling_factor_weighting * 2,
                 ]);
             }
-        };
+        }
 
         let len = bytes.len();
         assert_eq!(
@@ -1039,7 +1039,7 @@ impl IntoBytes for EdidR4DisplayRangeLimits {
                     }
                 }
             }
-        };
+        }
 
         let len = bytes.len();
         assert_eq!(
