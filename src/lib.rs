@@ -18,7 +18,7 @@
 )]
 #![doc = include_str!("../README.md")]
 
-use core::{array, fmt, num};
+use core::{array, fmt, iter, num};
 
 use num_traits::ToPrimitive as _;
 use static_assertions::const_assert_eq;
@@ -1849,6 +1849,18 @@ impl IntoBytes for Edid {
 
 impl From<EdidRelease3> for Edid {
     fn from(value: EdidRelease3) -> Self {
+        let descriptors = iter::once(EdidDescriptor::R3(EdidR3Descriptor::DetailedTiming(
+            value.preferred_timing,
+        )))
+        .chain(
+            value
+                .descriptors
+                .into_iter()
+                .take(3)
+                .map(EdidDescriptor::R3),
+        )
+        .collect();
+
         Self {
             release: EdidRelease::R3,
             manufacturer: value.manufacturer,
@@ -1859,11 +1871,7 @@ impl From<EdidRelease3> for Edid {
             chroma_coord: value.filter_chromaticity,
             established_timings: value.established_timings,
             standard_timings: value.standard_timings,
-            descriptors: value
-                .descriptors
-                .into_iter()
-                .map(EdidDescriptor::R3)
-                .collect(),
+            descriptors,
             extensions: value.extensions,
         }
     }
@@ -1871,6 +1879,18 @@ impl From<EdidRelease3> for Edid {
 
 impl From<EdidRelease4> for Edid {
     fn from(value: EdidRelease4) -> Self {
+        let descriptors = iter::once(EdidDescriptor::R4(EdidR4Descriptor::DetailedTiming(
+            value.preferred_timing,
+        )))
+        .chain(
+            value
+                .descriptors
+                .into_iter()
+                .take(3)
+                .map(EdidDescriptor::R4),
+        )
+        .collect();
+
         Self {
             release: EdidRelease::R4,
             manufacturer: value.manufacturer,
@@ -1881,11 +1901,7 @@ impl From<EdidRelease4> for Edid {
             chroma_coord: value.filter_chromaticity,
             established_timings: value.established_timings,
             standard_timings: value.standard_timings,
-            descriptors: value
-                .descriptors
-                .into_iter()
-                .map(EdidDescriptor::R4)
-                .collect(),
+            descriptors,
             extensions: value.extensions,
         }
     }
@@ -1952,7 +1968,8 @@ pub struct EdidRelease3 {
     #[builder(via_mutators)]
     standard_timings: Vec<EdidStandardTiming>,
 
-    // FIXME: The Preferred Timing Descriptors is required in the first position
+    preferred_timing: EdidDescriptorDetailedTiming,
+
     // FIXME: Monitor Name is mandatory
     // FIXME: Display Range Limits is mandatory
     #[builder(via_mutators)]
@@ -2042,7 +2059,8 @@ pub struct EdidRelease4 {
     #[builder(via_mutators)]
     standard_timings: Vec<EdidStandardTiming>,
 
-    // FIXME: The Preferred Timing Descriptors is required in the first position
+    preferred_timing: EdidDescriptorDetailedTiming,
+
     // FIXME: If continuous frequency, a display range limits descriptor is required
     #[builder(via_mutators)]
     descriptors: Vec<EdidR4Descriptor>,
@@ -2208,44 +2226,44 @@ mod test_edid_release4 {
                     .frequency(EdidStandardTimingRefreshRate::try_from(85).unwrap())
                     .build(),
             ])
+            .preferred_timing(
+                EdidDescriptorDetailedTiming::builder()
+                    .pixel_clock(EdidDetailedTimingPixelClock::try_from(162_000).unwrap())
+                    .horizontal(
+                        EdidDescriptorDetailedTimingHorizontal::builder()
+                            .active(EdidDescriptor12BitsTiming::try_from(1600).unwrap())
+                            .front_porch(EdidDescriptor10BitsTiming::try_from(64).unwrap())
+                            .sync_pulse(EdidDescriptor10BitsTiming::try_from(192).unwrap())
+                            .back_porch(EdidDescriptor12BitsTiming::try_from(304).unwrap())
+                            .size_mm(EdidDetailedTimingSizeMm::try_from(427).unwrap())
+                            .border(EdidDescriptor8BitsTiming::try_from(0).unwrap())
+                            .build(),
+                    )
+                    .vertical(
+                        EdidDescriptorDetailedTimingVertical::builder()
+                            .active(EdidDescriptor12BitsTiming::try_from(1200).unwrap())
+                            .front_porch(EdidDescriptor6BitsTiming::try_from(1).unwrap())
+                            .sync_pulse(EdidDescriptor6BitsTiming::try_from(3).unwrap())
+                            .back_porch(EdidDescriptor12BitsTiming::try_from(46).unwrap())
+                            .size_mm(EdidDetailedTimingSizeMm::try_from(320).unwrap())
+                            .border(EdidDescriptor8BitsTiming::try_from(0).unwrap())
+                            .build(),
+                    )
+                    .interlace(false)
+                    .stereo(EdidDetailedTimingStereo::None)
+                    .sync_type(EdidDetailedTimingSync::Digital(
+                        EdidDetailedTimingDigitalSync::builder()
+                            .kind(EdidDetailedTimingDigitalSyncKind::Separate(
+                                EdidDetailedTimingDigitalSeparateSync::builder()
+                                    .vsync_positive(true)
+                                    .build(),
+                            ))
+                            .hsync_positive(true)
+                            .build(),
+                    ))
+                    .build(),
+            )
             .descriptors(vec![
-                EdidR4Descriptor::DetailedTiming(
-                    EdidDescriptorDetailedTiming::builder()
-                        .pixel_clock(EdidDetailedTimingPixelClock::try_from(162_000).unwrap())
-                        .horizontal(
-                            EdidDescriptorDetailedTimingHorizontal::builder()
-                                .active(EdidDescriptor12BitsTiming::try_from(1600).unwrap())
-                                .front_porch(EdidDescriptor10BitsTiming::try_from(64).unwrap())
-                                .sync_pulse(EdidDescriptor10BitsTiming::try_from(192).unwrap())
-                                .back_porch(EdidDescriptor12BitsTiming::try_from(304).unwrap())
-                                .size_mm(EdidDetailedTimingSizeMm::try_from(427).unwrap())
-                                .border(EdidDescriptor8BitsTiming::try_from(0).unwrap())
-                                .build(),
-                        )
-                        .vertical(
-                            EdidDescriptorDetailedTimingVertical::builder()
-                                .active(EdidDescriptor12BitsTiming::try_from(1200).unwrap())
-                                .front_porch(EdidDescriptor6BitsTiming::try_from(1).unwrap())
-                                .sync_pulse(EdidDescriptor6BitsTiming::try_from(3).unwrap())
-                                .back_porch(EdidDescriptor12BitsTiming::try_from(46).unwrap())
-                                .size_mm(EdidDetailedTimingSizeMm::try_from(320).unwrap())
-                                .border(EdidDescriptor8BitsTiming::try_from(0).unwrap())
-                                .build(),
-                        )
-                        .interlace(false)
-                        .stereo(EdidDetailedTimingStereo::None)
-                        .sync_type(EdidDetailedTimingSync::Digital(
-                            EdidDetailedTimingDigitalSync::builder()
-                                .kind(EdidDetailedTimingDigitalSyncKind::Separate(
-                                    EdidDetailedTimingDigitalSeparateSync::builder()
-                                        .vsync_positive(true)
-                                        .build(),
-                                ))
-                                .hsync_positive(true)
-                                .build(),
-                        ))
-                        .build(),
-                ),
                 EdidR4Descriptor::DisplayRangeLimits(
                     EdidR4DisplayRangeLimits::builder()
                         .min_vfreq(EdidR4DisplayRangeVerticalFreq::try_from(50).unwrap())

@@ -1387,7 +1387,13 @@ fn decode_and_check_edid_release_3(json: &Value, expected: &[u8]) {
     let edid = edid.standard_timings(decode_standard_timings(standard_timings));
 
     let descriptors = &base["Descriptors"];
-    let edid = edid.descriptors(decode_descriptors_release_3(descriptors));
+    let mut descriptors = decode_descriptors_release_3(descriptors);
+
+    let preferred = match descriptors.remove(0) {
+        EdidR3Descriptor::DetailedTiming(t) => t,
+        _ => unreachable!(),
+    };
+    let edid = edid.preferred_timing(preferred).descriptors(descriptors);
 
     let bytes = edid.build().into_bytes();
 
@@ -1420,7 +1426,13 @@ fn decode_and_check_edid_release_4(json: &Value, expected: &[u8]) {
     let edid = edid.standard_timings(decode_standard_timings(standard_timings));
 
     let descriptors = &base["Descriptors"];
-    let edid = edid.descriptors(decode_descriptors_release_4(descriptors));
+    let mut descriptors = decode_descriptors_release_4(descriptors);
+
+    let preferred = match descriptors.remove(0) {
+        EdidR4Descriptor::DetailedTiming(t) => t,
+        _ => unreachable!(),
+    };
+    let edid = edid.preferred_timing(preferred).descriptors(descriptors);
 
     let bytes = edid.build().into_bytes();
 
