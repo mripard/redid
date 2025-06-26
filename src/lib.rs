@@ -4,23 +4,6 @@
 
 // FIXME: Write all the doc
 #![allow(missing_docs)]
-#![cfg_attr(
-    feature = "nightly",
-    feature(
-        type_privacy_lints,
-        non_exhaustive_omitted_patterns_lint,
-        strict_provenance
-    )
-)]
-#![cfg_attr(
-    feature = "nightly",
-    warn(
-        fuzzy_provenance_casts,
-        lossy_provenance_casts,
-        unnameable_types,
-        non_exhaustive_omitted_patterns,
-    )
-)]
 #![doc = include_str!("../README.md")]
 
 use core::{array, fmt, num};

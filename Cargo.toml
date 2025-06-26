@@ -21,9 +21,6 @@ rstest = { version = "0.25.0", default-features = false }
 serde_json = "1.0.111"
 uom = "0.37.0"
 
-[features]
-nightly = []
-
 [lints.rust]
 # Groups
 future_incompatible = { level = "warn", priority = -1 }
