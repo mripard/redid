@@ -1,0 +1,81 @@
+# This is the sample that was used to generate
+# https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/tests/drm_kunit_edid.h?h=v6.15#n6
+
+edid:
+  variant: 1.3
+
+  manufacturer: LNX
+  product_code: 42
+  date:
+    year: 2023
+
+  display_parameters_features:
+    video_input:
+      digital:
+        dfp1_compatible: true
+
+    size:
+      size:
+        horizontal_cm: 160
+        vertical_cm: 90
+
+    display_transfer_characteristics:
+      gamma: 2.2
+
+    feature_support:
+      display_type: rgb_color
+
+  filter_chromaticity:
+    color:
+      white:
+        x: 0
+        y: 0
+
+      red:
+        x: 0
+        y: 0
+
+      green:
+        x: 0
+        y: 0
+
+      blue:
+        x: 0
+        y: 0
+
+  preferred_timing:
+    pixel_clock: 148500
+
+    horizontal:
+      active: 1920
+      front_porch: 88
+      sync_pulse: 44
+      back_porch: 148
+      size_mm: 1600
+
+    vertical:
+      active: 1080
+      front_porch: 4
+      sync_pulse: 5
+      back_porch: 36
+      size_mm: 900
+
+    sync_type:
+      digital:
+        hsync_positive: true
+        kind:
+          separate:
+            vsync_positive: true
+
+    stereo: none
+
+  descriptors:
+    - product_name: Test EDID
+
+    - display_range_limits:
+        max_pixelclock: 150
+        min_hfreq: 30
+        max_hfreq: 70
+        min_vfreq: 50
+        max_vfreq: 70
+        timings_support: default_gtf
