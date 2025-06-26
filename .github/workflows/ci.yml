@@ -39,11 +39,10 @@ jobs:
         with:
           components: clippy
 
-      - name: Check clippy
-        uses: actions-rs/clippy-check@v1
+      - uses: giraffate/clippy-action@v1
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: --workspace --all-features
+          reporter: 'github-pr-review'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
   format:
     name: Rustfmt
