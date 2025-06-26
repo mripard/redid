@@ -54,11 +54,10 @@ jobs:
         with:
           components: rustfmt
 
-      - name: Check Format
-        uses: "actions-rs/cargo@v1"
+      - uses: mbrobbel/rustfmt-check@master
         with:
-          command: "fmt"
-          args: "--all -- --check"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          mode: review
 
   tests:
     name: Tests
