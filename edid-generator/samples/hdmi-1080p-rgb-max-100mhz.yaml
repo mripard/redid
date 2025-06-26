@@ -1,0 +1,108 @@
+# This is the sample that was used to generate
+# https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/tests/drm_kunit_edid.h?h=v6.15#n64
+
+edid:
+  variant: hdmi
+
+  manufacturer: LNX
+  product_code: 42
+  product_name: Test EDID
+  date:
+    year: 2023
+
+  display_parameters_features:
+    video_input:
+      digital:
+        dfp1_compatible: true
+
+    size:
+      size:
+        horizontal_cm: 160
+        vertical_cm: 90
+
+    display_transfer_characteristics:
+      gamma: 2.2
+
+    feature_support:
+      display_type: monochrome_gray_scale
+
+  filter_chromaticity:
+    color:
+      white:
+        x: 0
+        y: 0
+
+      red:
+        x: 0
+        y: 0
+
+      green:
+        x: 0
+        y: 0
+
+      blue:
+        x: 0
+        y: 0
+
+  preferred_timing:
+    pixel_clock: 148500
+
+    horizontal:
+      active: 1920
+      front_porch: 88
+      sync_pulse: 44
+      back_porch: 148
+      size_mm: 1600
+
+    vertical:
+      active: 1080
+      front_porch: 4
+      sync_pulse: 5
+      back_porch: 36
+      size_mm: 900
+
+    sync_type:
+      digital:
+        hsync_positive: true
+        kind:
+          separate:
+            vsync_positive: true
+
+    stereo: none
+
+  limits:
+    max_pixelclock: 150
+    min_hfreq: 30
+    max_hfreq: 70
+    min_vfreq: 50
+    max_vfreq: 70
+    timings_support: default_gtf
+
+  cta861_extension:
+    underscan_it_formats_by_default: true
+    native_formats: 1
+
+    data_blocks:
+      - colorimetry:
+          xv_ycc_601: false
+          xv_ycc_709: false
+          s_ycc_601: false
+          op_ycc_601: false
+          op_rgb: false
+          bt_2020_c_ycc: false
+          bt_2020_ycc: false
+          bt_2020_rgb: false
+          dci_p3: false
+
+      - video:
+          descriptors:
+            - vic: 16
+
+      - video_capability:
+          qs_quant: selectable
+          it_scan: underscanned
+          ce_scan: underscanned
+
+      - hdmi:
+          source_physical_address: 1.2.3.4
+          max_tmds_rate_mhz: 100

@@ -1,0 +1,30 @@
+[package]
+authors.workspace = true
+description = "VESA EDID Generation Library"
+name = "redid"
+version.workspace = true
+edition.workspace = true
+readme = "README.md"
+license-file.workspace = true
+keywords = ["edid", "display", "graphics"]
+categories = ["encoding", "graphics", "hardware-support"]
+repository.workspace = true
+
+[dependencies]
+bon.workspace = true
+encoding.workspace = true
+num-traits.workspace = true
+serde = { workspace = true, optional = true }
+static_assertions.workspace = true
+typed-builder.workspace = true
+
+[dev-dependencies]
+rstest.workspace = true
+serde_json.workspace = true
+uom.workspace = true
+
+[features]
+serde = ["dep:serde"]
+
+[lints]
+workspace = true

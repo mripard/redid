@@ -2,6 +2,8 @@ use core::{cmp, fmt};
 
 use encoding::{all::ISO_8859_1, EncoderTrap, Encoding as _};
 use num_traits::{Bounded, CheckedShl, Num, ToPrimitive as _, WrappingSub};
+#[cfg(feature = "serde")]
+use serde::Deserialize;
 use typed_builder::TypedBuilder;
 
 use crate::{
@@ -54,6 +56,8 @@ mod test_max_size_bits {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "u8"))]
 pub struct EdidDescriptorCustomTag(u8);
 
 impl TryFrom<u8> for EdidDescriptorCustomTag {
@@ -69,6 +73,8 @@ impl TryFrom<u8> for EdidDescriptorCustomTag {
 }
 
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "Vec<u8>"))]
 pub struct EdidDescriptorCustomPayload(Vec<u8>);
 
 impl TryFrom<Vec<u8>> for EdidDescriptorCustomPayload {
@@ -86,6 +92,8 @@ impl TryFrom<Vec<u8>> for EdidDescriptorCustomPayload {
 }
 
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidDescriptorCustom {
     tag: EdidDescriptorCustomTag,
     payload: EdidDescriptorCustomPayload,
@@ -126,6 +134,8 @@ impl TryFrom<(u8, Vec<u8>)> for EdidDescriptorCustom {
 }
 
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "String"))]
 pub struct EdidDescriptorString(String);
 
 impl EdidDescriptorString {
@@ -206,6 +216,8 @@ impl IntoBytes for EdidDescriptorString {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "u32"))]
 pub struct EdidDetailedTimingPixelClock(u32);
 
 impl EdidDetailedTimingPixelClock {
@@ -253,30 +265,40 @@ mod test_descriptor_detailed_timing_pixel_clock {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum EdidDetailedTimingAnalogSync {
     BipolarComposite(bool, bool),
     Composite(bool, bool),
 }
 
 #[derive(Clone, Copy, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidDetailedTimingDigitalCompositeSync {
     #[builder(default)]
     serrations: bool,
 }
 
 #[derive(Clone, Copy, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidDetailedTimingDigitalSeparateSync {
     #[builder(default)]
     vsync_positive: bool,
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum EdidDetailedTimingDigitalSyncKind {
     Composite(EdidDetailedTimingDigitalCompositeSync),
     Separate(EdidDetailedTimingDigitalSeparateSync),
 }
 
 #[derive(Clone, Copy, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidDetailedTimingDigitalSync {
     kind: EdidDetailedTimingDigitalSyncKind,
 
@@ -285,12 +307,16 @@ pub struct EdidDetailedTimingDigitalSync {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum EdidDetailedTimingSync {
     Analog(EdidDetailedTimingAnalogSync),
     Digital(EdidDetailedTimingDigitalSync),
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum EdidDetailedTimingStereo {
     None,
     FieldSequentialRightOnSync,
@@ -303,6 +329,15 @@ pub enum EdidDetailedTimingStereo {
 
 #[derive(Clone, Copy, Debug)]
 pub struct EdidDescriptorTiming<const N: usize, T: fmt::Display>(T);
+
+impl<const N: usize, T> Default for EdidDescriptorTiming<N, T>
+where
+    T: Num + fmt::Display,
+{
+    fn default() -> Self {
+        Self(T::zero())
+    }
+}
 
 impl<const N: usize, T> EdidDescriptorTiming<N, T>
 where
@@ -323,13 +358,22 @@ where
     }
 }
 
-pub type EdidDescriptor6BitsTiming = EdidDescriptorTiming<6, u8>;
+#[derive(Clone, Copy, Debug, Default)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "u8"))]
+pub struct EdidDescriptor6BitsTiming(EdidDescriptorTiming<6, u8>);
+
+impl EdidDescriptor6BitsTiming {
+    fn into_raw(self) -> u8 {
+        self.0.into_raw()
+    }
+}
 
 impl TryFrom<u8> for EdidDescriptor6BitsTiming {
     type Error = EdidTypeConversionError<u8>;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
-        EdidDescriptorTiming::try_from(value)
+        Ok(Self(EdidDescriptorTiming::try_from(value)?))
     }
 }
 
@@ -346,13 +390,22 @@ mod test_edid_detailed_timings_6bits_fields {
     }
 }
 
-pub type EdidDescriptor8BitsTiming = EdidDescriptorTiming<8, u8>;
+#[derive(Clone, Copy, Debug, Default)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "u8"))]
+pub struct EdidDescriptor8BitsTiming(EdidDescriptorTiming<8, u8>);
+
+impl EdidDescriptor8BitsTiming {
+    fn into_raw(self) -> u8 {
+        self.0.into_raw()
+    }
+}
 
 impl TryFrom<u8> for EdidDescriptor8BitsTiming {
     type Error = EdidTypeConversionError<u8>;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
-        EdidDescriptorTiming::try_from(value)
+        Ok(Self(EdidDescriptorTiming::try_from(value)?))
     }
 }
 
@@ -367,13 +420,22 @@ mod test_edid_detailed_timings_8bits_fields {
     }
 }
 
-pub type EdidDescriptor10BitsTiming = EdidDescriptorTiming<10, u16>;
+#[derive(Clone, Copy, Debug, Default)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "u16"))]
+pub struct EdidDescriptor10BitsTiming(EdidDescriptorTiming<10, u16>);
+
+impl EdidDescriptor10BitsTiming {
+    fn into_raw(self) -> u16 {
+        self.0.into_raw()
+    }
+}
 
 impl TryFrom<u16> for EdidDescriptor10BitsTiming {
     type Error = EdidTypeConversionError<u16>;
 
     fn try_from(value: u16) -> Result<Self, Self::Error> {
-        EdidDescriptorTiming::try_from(value)
+        Ok(Self(EdidDescriptorTiming::try_from(value)?))
     }
 }
 
@@ -390,13 +452,22 @@ mod test_edid_detailed_timings_10bits_fields {
     }
 }
 
-pub type EdidDescriptor12BitsTiming = EdidDescriptorTiming<12, u16>;
+#[derive(Clone, Copy, Debug, Default)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "u16"))]
+pub struct EdidDescriptor12BitsTiming(EdidDescriptorTiming<12, u16>);
+
+impl EdidDescriptor12BitsTiming {
+    fn into_raw(self) -> u16 {
+        self.0.into_raw()
+    }
+}
 
 impl TryFrom<u16> for EdidDescriptor12BitsTiming {
     type Error = EdidTypeConversionError<u16>;
 
     fn try_from(value: u16) -> Result<Self, Self::Error> {
-        EdidDescriptorTiming::try_from(value)
+        Ok(Self(EdidDescriptorTiming::try_from(value)?))
     }
 }
 
@@ -429,28 +500,44 @@ mod test_edid_detailed_timings_size {
 }
 
 #[derive(Clone, Copy, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+pub struct EdidDescriptorDetailedTimingHorizontal {
+    active: EdidDescriptor12BitsTiming,
+    front_porch: EdidDescriptor10BitsTiming,
+    sync_pulse: EdidDescriptor10BitsTiming,
+    back_porch: EdidDescriptor12BitsTiming,
+    #[builder(default)]
+    #[cfg_attr(feature = "serde", serde(default))]
+    border: EdidDescriptor8BitsTiming,
+    size_mm: EdidDetailedTimingSizeMm,
+}
+
+#[derive(Clone, Copy, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+pub struct EdidDescriptorDetailedTimingVertical {
+    active: EdidDescriptor12BitsTiming,
+    front_porch: EdidDescriptor6BitsTiming,
+    sync_pulse: EdidDescriptor6BitsTiming,
+    back_porch: EdidDescriptor12BitsTiming,
+    #[builder(default)]
+    #[cfg_attr(feature = "serde", serde(default))]
+    border: EdidDescriptor8BitsTiming,
+    size_mm: EdidDetailedTimingSizeMm,
+}
+
+#[derive(Clone, Copy, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidDescriptorDetailedTiming {
     pixel_clock: EdidDetailedTimingPixelClock,
 
-    horizontal_addressable: EdidDescriptor12BitsTiming,
-    horizontal_blanking: EdidDescriptor12BitsTiming,
-
-    vertical_addressable: EdidDescriptor12BitsTiming,
-    vertical_blanking: EdidDescriptor12BitsTiming,
-
-    horizontal_front_porch: EdidDescriptor10BitsTiming,
-    horizontal_sync_pulse: EdidDescriptor10BitsTiming,
-
-    vertical_front_porch: EdidDescriptor6BitsTiming,
-    vertical_sync_pulse: EdidDescriptor6BitsTiming,
-
-    horizontal_size: EdidDetailedTimingSizeMm,
-    vertical_size: EdidDetailedTimingSizeMm,
-
-    horizontal_border: EdidDescriptor8BitsTiming,
-    vertical_border: EdidDescriptor8BitsTiming,
+    horizontal: EdidDescriptorDetailedTimingHorizontal,
+    vertical: EdidDescriptorDetailedTimingVertical,
 
     #[builder(default)]
+    #[cfg_attr(feature = "serde", serde(default))]
     interlace: bool,
 
     sync_type: EdidDetailedTimingSync,
@@ -460,66 +547,69 @@ pub struct EdidDescriptorDetailedTiming {
 impl IntoBytes for EdidDescriptorDetailedTiming {
     #[allow(clippy::too_many_lines)]
     fn into_bytes(self) -> Vec<u8> {
-        let mut data = Vec::with_capacity(EDID_DESCRIPTOR_LEN);
-
         let freq = self.pixel_clock.into_raw();
-        let lo_freq = (freq & 0xff) as u8;
-        let hi_freq = ((freq >> 8) & 0xff) as u8;
+        let freq_lo = (freq & 0xff) as u8;
+        let freq_hi = ((freq >> 8) & 0xff) as u8;
 
-        data.extend_from_slice(&[lo_freq, hi_freq]);
+        let hact = self.horizontal.active.into_raw();
+        let hact_lo = (hact & 0xff) as u8;
+        let hact_hi = ((hact >> 8) & 0xf) as u8;
 
-        let haddr = self.horizontal_addressable.into_raw();
-        let haddr_lo = (haddr & 0xff) as u8;
-        let haddr_hi = ((haddr >> 8) & 0xf) as u8;
+        let hborder = self.horizontal.border.into_raw();
+        let hfp = self.horizontal.front_porch.into_raw();
+        let hso = u16::from(hborder) + hfp;
+        let _: EdidDescriptor10BitsTiming = EdidDescriptor10BitsTiming::try_from(hso)
+            .expect("Horizontal Front Porch and Border don't fit into 10 bits.");
 
-        let hblank = self.horizontal_blanking.into_raw();
-        let hblank_lo = (hblank & 0xff) as u8;
-        let hblank_hi = ((hblank >> 8) & 0xf) as u8;
+        let hso_lo = (hso & 0xff) as u8;
+        let hso_hi = ((hso >> 8) & 0x3) as u8;
 
-        data.extend_from_slice(&[haddr_lo, hblank_lo, (haddr_hi << 4) | hblank_hi]);
-
-        let vaddr = self.vertical_addressable.into_raw();
-        let vaddr_lo = (vaddr & 0xff) as u8;
-        let vaddr_hi = ((vaddr >> 8) & 0xf) as u8;
-
-        let vblank = self.vertical_blanking.into_raw();
-        let vblank_lo = (vblank & 0xff) as u8;
-        let vblank_hi = ((vblank >> 8) & 0xf) as u8;
-
-        data.extend_from_slice(&[vaddr_lo, vblank_lo, (vaddr_hi << 4) | vblank_hi]);
-
-        let hfp = self.horizontal_front_porch.into_raw();
-        let hfp_lo = (hfp & 0xff) as u8;
-        let hfp_hi = ((hfp >> 8) & 0x3) as u8;
-
-        let hsync = self.horizontal_sync_pulse.into_raw();
+        let hsync = self.horizontal.sync_pulse.into_raw();
         let hsync_lo = (hsync & 0xff) as u8;
         let hsync_hi = ((hsync >> 8) & 0x3) as u8;
 
-        let vfp = self.vertical_front_porch.into_raw();
-        let vfp_lo = vfp & 0xf;
-        let vfp_hi = (vfp >> 4) & 0x3;
+        let hbp = self.horizontal.back_porch.into_raw();
+        let hblank = hso + hsync + hbp + u16::from(hborder);
+        let _: EdidDescriptor12BitsTiming = EdidDescriptor12BitsTiming::try_from(hblank).expect(
+            "Horizontal Front Porch, Back Porch, Sync Pulse and Borders don't fit into 12 bits.",
+        );
 
-        let vsync = self.vertical_sync_pulse.into_raw();
+        let hblank_lo = (hblank & 0xff) as u8;
+        let hblank_hi = ((hblank >> 8) & 0xf) as u8;
+
+        let vact = self.vertical.active.into_raw();
+        let vact_lo = (vact & 0xff) as u8;
+        let vact_hi = ((vact >> 8) & 0xf) as u8;
+
+        let vborder = self.vertical.border.into_raw();
+        let vfp = self.vertical.front_porch.into_raw();
+        let vso = vborder + vfp;
+        let _: EdidDescriptor6BitsTiming = EdidDescriptor6BitsTiming::try_from(vso)
+            .expect("Vertical Front Porch and Border don't fit into 6 bits.");
+
+        let vso_lo = vso & 0xf;
+        let vso_hi = (vso >> 4) & 0x3;
+
+        let vsync = self.vertical.sync_pulse.into_raw();
         let vsync_lo = vsync & 0xf;
         let vsync_hi = (vsync >> 4) & 0x3;
 
-        data.extend_from_slice(&[
-            hfp_lo,
-            hsync_lo,
-            (vfp_lo << 4) | vsync_lo,
-            (hfp_hi << 6) | (hsync_hi << 4) | (vfp_hi << 2) | vsync_hi,
-        ]);
+        let vbp = self.vertical.back_porch.into_raw();
+        let vblank = u16::from(vso) + u16::from(vsync) + vbp + u16::from(vborder);
+        let _: EdidDescriptor12BitsTiming = EdidDescriptor12BitsTiming::try_from(vblank).expect(
+            "Horizontal Front Porch, Back Porch, Sync Pulse and Borders don't fit into 12 bits.",
+        );
 
-        let hsize = self.horizontal_size.into_raw();
+        let vblank_lo = (vblank & 0xff) as u8;
+        let vblank_hi = ((vblank >> 8) & 0xf) as u8;
+
+        let hsize = self.horizontal.size_mm.into_raw();
         let hsize_lo = (hsize & 0xff) as u8;
         let hsize_hi = ((hsize >> 8) & 0xf) as u8;
 
-        let vsize = self.vertical_size.into_raw();
+        let vsize = self.vertical.size_mm.into_raw();
         let vsize_lo = (vsize & 0xff) as u8;
         let vsize_hi = ((vsize >> 8) & 0xf) as u8;
-
-        data.extend_from_slice(&[hsize_lo, vsize_lo, (hsize_hi << 4) | vsize_hi]);
 
         let mut flags: u8 = 0;
 
@@ -586,19 +676,28 @@ impl IntoBytes for EdidDescriptorDetailedTiming {
             }
         }
 
-        data.extend_from_slice(&[
-            self.horizontal_border.into_raw(),
-            self.vertical_border.into_raw(),
+        let data: [u8; EDID_DESCRIPTOR_LEN] = [
+            freq_lo,
+            freq_hi,
+            hact_lo,
+            hblank_lo,
+            (hact_hi << 4) | hblank_hi,
+            vact_lo,
+            vblank_lo,
+            (vact_hi << 4) | vblank_hi,
+            hso_lo,
+            hsync_lo,
+            (vso_lo << 4) | vsync_lo,
+            (hso_hi << 6) | (hsync_hi << 4) | (vso_hi << 2) | vsync_hi,
+            hsize_lo,
+            vsize_lo,
+            (hsize_hi << 4) | vsize_hi,
+            hborder,
+            vborder,
             flags,
-        ]);
+        ];
 
-        let len = data.len();
-        assert_eq!(
-            len, EDID_DESCRIPTOR_LEN,
-            "Descriptor is larger than it should ({len} vs expected {EDID_DESCRIPTOR_LEN} bytes)",
-        );
-
-        data
+        data.to_vec()
     }
 
     fn size(&self) -> usize {
@@ -607,6 +706,8 @@ impl IntoBytes for EdidDescriptorDetailedTiming {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "u8"))]
 pub struct EdidDisplayRangeHorizontalFreq(u8);
 
 impl TryFrom<u8> for EdidDisplayRangeHorizontalFreq {
@@ -622,6 +723,8 @@ impl TryFrom<u8> for EdidDisplayRangeHorizontalFreq {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "u8"))]
 pub struct EdidDisplayRangeVerticalFreq(u8);
 
 impl TryFrom<u8> for EdidDisplayRangeVerticalFreq {
@@ -637,6 +740,8 @@ impl TryFrom<u8> for EdidDisplayRangeVerticalFreq {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "u16"))]
 pub struct EdidDisplayRangePixelClock(u16);
 
 impl EdidDisplayRangePixelClock {
@@ -685,6 +790,8 @@ mod test_descriptor_display_range_pixel_clock {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "u16"))]
 pub struct EdidDisplayRangeVideoTimingsGTFStartFrequency(u16);
 
 impl TryFrom<u16> for EdidDisplayRangeVideoTimingsGTFStartFrequency {
@@ -706,6 +813,8 @@ impl EdidDisplayRangeVideoTimingsGTFStartFrequency {
 }
 
 #[derive(Clone, Copy, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidDisplayRangeVideoTimingsGTF {
     #[builder(setter(into))]
     horizontal_start_frequency: EdidDisplayRangeVideoTimingsGTFStartFrequency,
@@ -716,12 +825,17 @@ pub struct EdidDisplayRangeVideoTimingsGTF {
 }
 
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 pub enum EdidR3DisplayRangeVideoTimingsSupport {
+    #[cfg_attr(feature = "serde", serde(rename = "default_gtf"))]
     DefaultGTF,
+    #[cfg_attr(feature = "serde", serde(rename = "secondary_gtf"))]
     SecondaryGTF(EdidDisplayRangeVideoTimingsGTF),
 }
 
 #[derive(Clone, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidR3DisplayRangeLimits {
     min_hfreq: EdidDisplayRangeHorizontalFreq,
     max_hfreq: EdidDisplayRangeHorizontalFreq,
@@ -778,6 +892,8 @@ impl IntoBytes for EdidR3DisplayRangeLimits {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "u16"))]
 pub struct EdidR4DisplayRangeHorizontalFreq(bool, u8);
 
 impl TryFrom<u16> for EdidR4DisplayRangeHorizontalFreq {
@@ -801,6 +917,8 @@ impl TryFrom<u16> for EdidR4DisplayRangeHorizontalFreq {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "u16"))]
 pub struct EdidR4DisplayRangeVerticalFreq(bool, u8);
 
 impl TryFrom<u16> for EdidR4DisplayRangeVerticalFreq {
@@ -825,6 +943,8 @@ impl TryFrom<u16> for EdidR4DisplayRangeVerticalFreq {
 #[repr(u8)]
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum EdidR4DisplayRangeVideoTimingsAspectRatio {
     Ratio_4_3 = 0,
     Ratio_16_9,
@@ -834,6 +954,8 @@ pub enum EdidR4DisplayRangeVideoTimingsAspectRatio {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(try_from = "u16"))]
 pub struct EdidR4DisplayRangeVideoTimingsCVTPixelClockDiff(u8);
 
 impl TryFrom<EdidDisplayRangePixelClock> for EdidR4DisplayRangeVideoTimingsCVTPixelClockDiff {
@@ -852,6 +974,28 @@ impl TryFrom<EdidDisplayRangePixelClock> for EdidR4DisplayRangeVideoTimingsCVTPi
     }
 }
 
+impl TryFrom<u16> for EdidR4DisplayRangeVideoTimingsCVTPixelClockDiff {
+    type Error = EdidTypeConversionError<u16>;
+
+    fn try_from(value: u16) -> Result<Self, Self::Error> {
+        let clock = EdidDisplayRangePixelClock::try_from(value)?;
+
+        match EdidR4DisplayRangeVideoTimingsCVTPixelClockDiff::try_from(clock) {
+            Ok(v) => Ok(v),
+            Err(e) => match e {
+                EdidTypeConversionError::Int(ie) => Err(Self::Error::Int(ie)),
+                EdidTypeConversionError::Slice(se) => Err(Self::Error::Slice(se)),
+                EdidTypeConversionError::Range(a, b, c) => Err(Self::Error::Range(
+                    a.into(),
+                    b.map(Into::into),
+                    c.map(Into::into),
+                )),
+                EdidTypeConversionError::Value(v) => Err(Self::Error::Value(v)),
+            },
+        }
+    }
+}
+
 impl EdidR4DisplayRangeVideoTimingsCVTPixelClockDiff {
     fn into_raw(self) -> u8 {
         self.0 * 4
@@ -859,6 +1003,7 @@ impl EdidR4DisplayRangeVideoTimingsCVTPixelClockDiff {
 }
 
 #[derive(Clone, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 #[builder(mutators(
     #[allow(unreachable_pub)]
     pub fn supported_aspect_ratios(&mut self, ar: Vec<EdidR4DisplayRangeVideoTimingsAspectRatio>) {
@@ -870,6 +1015,7 @@ impl EdidR4DisplayRangeVideoTimingsCVTPixelClockDiff {
         self.supported_aspect_ratios.push(ar);
     }
 ))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidR4DisplayRangeVideoTimingsCVTR1 {
     // FIXME: Max 8184 pixels
     maximum_active_pixels_per_line: u16,
@@ -900,20 +1046,40 @@ pub struct EdidR4DisplayRangeVideoTimingsCVTR1 {
 }
 
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum EdidR4DisplayRangeVideoTimingsCVT {
     R1(EdidR4DisplayRangeVideoTimingsCVTR1),
 }
 
-#[derive(Clone, Debug)]
-pub enum EdidR4DisplayRangeVideoTimingsSupport {
-    DefaultGTF,
-    RangeLimitsOnly,
-    #[deprecated = "GTF is considered obsolete with EDID 1.4"]
-    SecondaryGTF(EdidDisplayRangeVideoTimingsGTF),
-    CVTSupported(EdidR4DisplayRangeVideoTimingsCVT),
+// It's a bit of an ugly workaround, but otherwise the serde Deserialize implementation will
+// trigger a deprecation warning.
+//
+// See https://github.com/rust-lang/rust/issues/87454
+#[allow(deprecated)]
+mod vid_timing {
+    use super::{EdidDisplayRangeVideoTimingsGTF, EdidR4DisplayRangeVideoTimingsCVT};
+    #[cfg(feature = "serde")]
+    use serde::Deserialize;
+
+    #[derive(Clone, Debug)]
+    #[cfg_attr(feature = "serde", derive(Deserialize))]
+    #[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+    pub enum EdidR4DisplayRangeVideoTimingsSupport {
+        #[cfg_attr(feature = "serde", serde(rename = "default_gtf"))]
+        DefaultGTF,
+        RangeLimitsOnly,
+        #[deprecated = "GTF is considered obsolete with EDID 1.4"]
+        SecondaryGTF(EdidDisplayRangeVideoTimingsGTF),
+        #[cfg_attr(feature = "serde", serde(rename = "cvt_supported"))]
+        CVTSupported(EdidR4DisplayRangeVideoTimingsCVT),
+    }
 }
+pub use vid_timing::EdidR4DisplayRangeVideoTimingsSupport;
 
 #[derive(Clone, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidR4DisplayRangeLimits {
     #[builder(setter(into))]
     min_hfreq: EdidR4DisplayRangeHorizontalFreq,
@@ -1059,6 +1225,7 @@ impl IntoBytes for EdidR4DisplayRangeLimits {
 
 #[allow(non_camel_case_types)]
 #[derive(Copy, Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 pub enum EdidR4DescriptorEstablishedTimingsIII {
     ET_1152_864_75Hz = 0,
     ET_1024_768_85Hz,
@@ -1108,6 +1275,7 @@ pub enum EdidR4DescriptorEstablishedTimingsIII {
 }
 
 #[derive(Clone, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 #[builder(mutators(
     #[allow(unreachable_pub)]
     pub fn established_timings(&mut self, et: Vec<EdidR4DescriptorEstablishedTimingsIII>) {
@@ -1119,6 +1287,7 @@ pub enum EdidR4DescriptorEstablishedTimingsIII {
         self.established_timings.push(et);
     }
 ))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidR4DescriptorEstablishedTimings {
     #[builder(via_mutators)]
     established_timings: Vec<EdidR4DescriptorEstablishedTimingsIII>,
@@ -1156,6 +1325,8 @@ impl IntoBytes for EdidR4DescriptorEstablishedTimings {
 }
 
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum EdidR3Descriptor {
     DetailedTiming(EdidDescriptorDetailedTiming),
     Custom(EdidDescriptorCustom),
@@ -1227,6 +1398,8 @@ impl IntoBytes for EdidR3Descriptor {
 }
 
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub enum EdidR4Descriptor {
     DetailedTiming(EdidDescriptorDetailedTiming),
     Custom(EdidDescriptorCustom),
@@ -1330,6 +1503,7 @@ mod tests {
 }
 
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 pub enum EdidDescriptor {
     R3(EdidR3Descriptor),
     R4(EdidR4Descriptor),

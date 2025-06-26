@@ -13,7 +13,8 @@ use serde_json::Value;
 use redid::{
     EdidAnalogSignalLevelStandard, EdidAnalogVideoInputDefinition, EdidAnalogVideoSetup,
     EdidChromaticityPoint, EdidChromaticityPoints, EdidDescriptorCustom,
-    EdidDescriptorDetailedTiming, EdidDescriptorString, EdidDetailedTimingAnalogSync,
+    EdidDescriptorDetailedTiming, EdidDescriptorDetailedTimingHorizontal,
+    EdidDescriptorDetailedTimingVertical, EdidDescriptorString, EdidDetailedTimingAnalogSync,
     EdidDetailedTimingDigitalCompositeSync, EdidDetailedTimingDigitalSeparateSync,
     EdidDetailedTimingDigitalSync, EdidDetailedTimingDigitalSyncKind, EdidDetailedTimingStereo,
     EdidDetailedTimingSync, EdidDisplayColorType, EdidDisplayRangeHorizontalFreq,
@@ -264,7 +265,7 @@ fn decode_basic_display_release_3(basic_display: &Value) -> EdidR3BasicDisplayPa
     EdidR3BasicDisplayParametersFeatures::builder()
         .video_input(decode_video_input_release_3(basic_display))
         .size(decode_size_release_3(basic_display))
-        .display_transfer_characteristic(gamma)
+        .display_transfer_characteristics(gamma)
         .feature_support(decode_feature_support_release_3(basic_display))
         .build()
 }
@@ -664,13 +665,9 @@ fn decode_descriptor_dtd(desc: &Value) -> EdidDescriptorDetailedTiming {
         .as_u64()
         .expect("Couldn't decode Descriptor Blanking X size") as u16;
 
-    let hblank = hblank_raw.try_into().unwrap();
-
     let vblank_raw = blanking["y"]
         .as_u64()
         .expect("Couldn't decode Descriptor Blanking y size") as u16;
-
-    let vblank = vblank_raw.try_into().unwrap();
 
     let border = desc["Border"]
         .as_object()
@@ -719,6 +716,16 @@ fn decode_descriptor_dtd(desc: &Value) -> EdidDescriptorDetailedTiming {
         .expect("Couldn't decode Descriptor Sync y size") as u8;
 
     let vsync = vsync_raw.try_into().unwrap();
+
+    let hbp_raw =
+        hblank_raw - (hfp_raw + u16::from(hborder_raw)) - hsync_raw - u16::from(hborder_raw);
+    let hbp = hbp_raw.try_into().unwrap();
+
+    let vbp_raw = vblank_raw
+        - (u16::from(vfp_raw) + u16::from(vborder_raw))
+        - u16::from(vsync_raw)
+        - u16::from(vborder_raw);
+    let vbp = vbp_raw.try_into().unwrap();
 
     let size = desc["Image size (mm)"]
         .as_object()
@@ -851,18 +858,26 @@ fn decode_descriptor_dtd(desc: &Value) -> EdidDescriptorDetailedTiming {
         .pixel_clock(pixel_clock)
         .sync_type(sync_type_type)
         .stereo(stereo)
-        .horizontal_size(hsize)
-        .vertical_size(vsize)
-        .horizontal_front_porch(hfp)
-        .vertical_front_porch(vfp)
-        .horizontal_addressable(hdisplay)
-        .vertical_addressable(vdisplay)
-        .horizontal_blanking(hblank)
-        .vertical_blanking(vblank)
-        .horizontal_border(hborder)
-        .vertical_border(vborder)
-        .horizontal_sync_pulse(hsync)
-        .vertical_sync_pulse(vsync)
+        .horizontal(
+            EdidDescriptorDetailedTimingHorizontal::builder()
+                .active(hdisplay)
+                .front_porch(hfp)
+                .sync_pulse(hsync)
+                .back_porch(hbp)
+                .border(hborder)
+                .size_mm(hsize)
+                .build(),
+        )
+        .vertical(
+            EdidDescriptorDetailedTimingVertical::builder()
+                .active(vdisplay)
+                .front_porch(vfp)
+                .sync_pulse(vsync)
+                .back_porch(vbp)
+                .border(vborder)
+                .size_mm(vsize)
+                .build(),
+        )
         .build()
 }
 
@@ -1372,7 +1387,13 @@ fn decode_and_check_edid_release_3(json: &Value, expected: &[u8]) {
     let edid = edid.standard_timings(decode_standard_timings(standard_timings));
 
     let descriptors = &base["Descriptors"];
-    let edid = edid.descriptors(decode_descriptors_release_3(descriptors));
+    let mut descriptors = decode_descriptors_release_3(descriptors);
+
+    let preferred = match descriptors.remove(0) {
+        EdidR3Descriptor::DetailedTiming(t) => t,
+        _ => unreachable!(),
+    };
+    let edid = edid.preferred_timing(preferred).descriptors(descriptors);
 
     let bytes = edid.build().into_bytes();
 
@@ -1405,7 +1426,13 @@ fn decode_and_check_edid_release_4(json: &Value, expected: &[u8]) {
     let edid = edid.standard_timings(decode_standard_timings(standard_timings));
 
     let descriptors = &base["Descriptors"];
-    let edid = edid.descriptors(decode_descriptors_release_4(descriptors));
+    let mut descriptors = decode_descriptors_release_4(descriptors);
+
+    let preferred = match descriptors.remove(0) {
+        EdidR4Descriptor::DetailedTiming(t) => t,
+        _ => unreachable!(),
+    };
+    let edid = edid.preferred_timing(preferred).descriptors(descriptors);
 
     let bytes = edid.build().into_bytes();
 

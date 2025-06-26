@@ -1,0 +1,22 @@
+[package]
+authors.workspace = true
+edition.workspace = true
+license-file.workspace = true
+name = "edid-generator"
+publish = false
+repository.workspace = true
+version.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+clap.workspace = true
+redid = { workspace = true, features = ["serde"] }
+serde.workspace = true
+serde_yaml.workspace = true
+
+[dev-dependencies]
+md5.workspace = true
+rstest.workspace = true
+
+[lints]
+workspace = true
