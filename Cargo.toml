@@ -19,7 +19,7 @@ clap = { version = "4.5.40", default-features = false, features = [
     "std",
 ] }
 encoding = "0.2.33"
-md5 = { version = "0.7.0", default-features = false, features = ["std"] }
+md5 = { version = "0.8.0", default-features = false, features = ["std"] }
 num-traits = "0.2.17"
 serde = { version = "1.0.219", features = ["derive"] }
 static_assertions = "1.1.0"
