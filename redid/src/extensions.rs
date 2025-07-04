@@ -3,9 +3,7 @@ use num_traits::ToPrimitive as _;
 use serde::{de, Deserialize, Deserializer};
 use typed_builder::TypedBuilder;
 
-use crate::{
-    utils::div_round_up, EdidDescriptorDetailedTiming, EdidTypeConversionError, IntoBytes,
-};
+use crate::{EdidDescriptorDetailedTiming, EdidTypeConversionError, IntoBytes};
 
 const EDID_EXTENSION_CTA_861_LEN: usize = 128;
 
@@ -653,7 +651,9 @@ impl IntoBytes for EdidExtensionCTA861HdmiDataBlock {
             let mut byte = 0;
 
             if let Some(val) = self.max_tmds_rate_mhz {
-                let rate = div_round_up(&(val.0 as usize), &5)
+                let rate = val
+                    .0
+                    .div_ceil(5)
                     .to_u8()
                     .expect("Rate would overflow our type");
 

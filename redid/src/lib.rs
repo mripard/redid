@@ -64,8 +64,6 @@ pub use extensions::{
 
 pub mod hdmi;
 
-mod utils;
-
 const EDID_BASE_LEN: usize = 128;
 
 // It looks like const_assert! doesn't count as being used somehow.
