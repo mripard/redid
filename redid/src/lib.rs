@@ -1776,7 +1776,7 @@ impl TryFrom<u16> for EdidStandardTimingHorizontalSize {
             return Err(EdidTypeConversionError::Range(value, Some(256), Some(2288)));
         }
 
-        if (value % 8) != 0 {
+        if !value.is_multiple_of(8) {
             return Err(EdidTypeConversionError::Value(String::from(
                 "Standard Timing Horizontal Size must be a multiple of 8 pixels.",
             )));
