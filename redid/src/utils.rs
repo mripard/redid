@@ -1,6 +1,6 @@
 use num_traits::{CheckedAdd, CheckedDiv, CheckedMul, Euclid, FromPrimitive, Num};
 
-pub(crate) fn round_up<T>(number: &T, multiple: &T) -> T
+fn round_up<T>(number: &T, multiple: &T) -> T
 where
     T: Copy + Num + CheckedAdd + CheckedMul + Euclid + FromPrimitive,
 {

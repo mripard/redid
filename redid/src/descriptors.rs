@@ -7,9 +7,8 @@ use serde::Deserialize;
 use typed_builder::TypedBuilder;
 
 use crate::{
-    utils::{div_round_up, round_up},
-    EdidTypeConversionError, IntoBytes, EDID_DESCRIPTORS_NUM, EDID_DESCRIPTOR_LEN,
-    EDID_DESCRIPTOR_PAYLOAD_LEN,
+    utils::div_round_up, EdidTypeConversionError, IntoBytes, EDID_DESCRIPTORS_NUM,
+    EDID_DESCRIPTOR_LEN, EDID_DESCRIPTOR_PAYLOAD_LEN,
 };
 
 fn compute_max_value<T>(num_bits: usize) -> T
@@ -746,7 +745,7 @@ pub struct EdidDisplayRangePixelClock(u16);
 
 impl EdidDisplayRangePixelClock {
     fn round(self) -> u16 {
-        round_up(&self.0, &10)
+        self.0.next_multiple_of(10)
     }
 
     fn into_raw(self) -> u8 {
