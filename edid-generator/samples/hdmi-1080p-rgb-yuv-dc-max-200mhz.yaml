@@ -71,11 +71,15 @@ edid:
     stereo: none
 
   limits:
-    max_pixelclock: 150
-    min_hfreq: 30
-    max_hfreq: 70
-    min_vfreq: 50
-    max_vfreq: 70
+    max_pixelclock_mhz: 150
+    hfreq_khz:
+      min: 30
+      max: 70
+
+    vfreq_hz:
+      min: 50
+      max: 70
+
     timings_support: default_gtf
 
   cta861_extension:

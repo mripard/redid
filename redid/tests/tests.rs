@@ -17,8 +17,8 @@ use redid::{
     EdidDescriptorDetailedTimingVertical, EdidDescriptorString, EdidDetailedTimingAnalogSync,
     EdidDetailedTimingDigitalCompositeSync, EdidDetailedTimingDigitalSeparateSync,
     EdidDetailedTimingDigitalSync, EdidDetailedTimingDigitalSyncKind, EdidDetailedTimingStereo,
-    EdidDetailedTimingSync, EdidDisplayColorType, EdidDisplayRangeHorizontalFreq,
-    EdidDisplayRangePixelClock, EdidDisplayRangeVerticalFreq, EdidDisplayRangeVideoTimingsGTF,
+    EdidDetailedTimingSync, EdidDisplayColorType, EdidDisplayRangeLimitsFrequency,
+    EdidDisplayRangeLimitsRangeFreq, EdidDisplayRangePixelClock, EdidDisplayRangeVideoTimingsGTF,
     EdidDisplayRangeVideoTimingsGTFStartFrequency, EdidDisplayTransferCharacteristics,
     EdidEstablishedTiming, EdidFilterChromaticity, EdidManufactureDate, EdidManufacturer,
     EdidProductCode, EdidR3BasicDisplayParametersFeatures, EdidR3Descriptor,
@@ -27,8 +27,8 @@ use redid::{
     EdidR3VideoInputDefinition, EdidR4BasicDisplayParametersFeatures, EdidR4Date, EdidR4Descriptor,
     EdidR4DescriptorEstablishedTimings, EdidR4DescriptorEstablishedTimingsIII,
     EdidR4DigitalColorDepth, EdidR4DigitalInterface, EdidR4DigitalVideoInputDefinition,
-    EdidR4DisplayColor, EdidR4DisplayColorEncoding, EdidR4DisplayRangeHorizontalFreq,
-    EdidR4DisplayRangeLimits, EdidR4DisplayRangeVerticalFreq,
+    EdidR4DisplayColor, EdidR4DisplayColorEncoding, EdidR4DisplayRangeLimits,
+    EdidR4DisplayRangeLimitsFrequency, EdidR4DisplayRangeLimitsRangeFreq,
     EdidR4DisplayRangeVideoTimingsAspectRatio, EdidR4DisplayRangeVideoTimingsCVT,
     EdidR4DisplayRangeVideoTimingsCVTR1, EdidR4DisplayRangeVideoTimingsSupport,
     EdidR4FeatureSupport, EdidR4ImageSize, EdidR4ManufactureDate, EdidR4VideoInputDefinition,
@@ -939,7 +939,7 @@ fn decode_range_limit_cvt(desc: &Value) -> EdidR4DisplayRangeVideoTimingsCVT {
         .expect("Couldn't decode the preferred refresh rate")
         .try_into()
         .unwrap();
-    let preferred_refresh_rate: EdidDisplayRangeVerticalFreq =
+    let preferred_refresh_rate: EdidDisplayRangeLimitsFrequency =
         preferred_refresh_rate_raw.try_into().unwrap();
     let cvt = cvt.preferred_vertical_refresh_rate(preferred_refresh_rate);
 
@@ -1041,14 +1041,14 @@ fn decode_display_range_release_3(desc: &Value) -> EdidR3DisplayRangeLimits {
         .expect("Couldn't decode Display Range Minimum Horizontal frequency")
         .try_into()
         .unwrap();
-    let hrate_min: EdidDisplayRangeHorizontalFreq = hrate_min_raw.try_into().unwrap();
+    let hrate_min: EdidDisplayRangeLimitsFrequency = hrate_min_raw.try_into().unwrap();
 
     let hrate_max_raw: u8 = hrate["Maximum"]
         .as_u64()
         .expect("Couldn't decode Display Range Maximum Horizontal frequency")
         .try_into()
         .unwrap();
-    let hrate_max: EdidDisplayRangeHorizontalFreq = hrate_max_raw.try_into().unwrap();
+    let hrate_max: EdidDisplayRangeLimitsFrequency = hrate_max_raw.try_into().unwrap();
 
     let vrate = desc["Vertical rate (Hz)"]
         .as_object()
@@ -1059,14 +1059,14 @@ fn decode_display_range_release_3(desc: &Value) -> EdidR3DisplayRangeLimits {
         .expect("Couldn't decode Display Range Minimum Vertical frequency")
         .try_into()
         .unwrap();
-    let vrate_min: EdidDisplayRangeVerticalFreq = vrate_min_raw.try_into().unwrap();
+    let vrate_min: EdidDisplayRangeLimitsFrequency = vrate_min_raw.try_into().unwrap();
 
     let vrate_max_raw: u8 = vrate["Maximum"]
         .as_u64()
         .expect("Couldn't decode Display Range Maximum Vertical frequency")
         .try_into()
         .unwrap();
-    let vrate_max: EdidDisplayRangeVerticalFreq = vrate_max_raw.try_into().unwrap();
+    let vrate_max: EdidDisplayRangeLimitsFrequency = vrate_max_raw.try_into().unwrap();
 
     let pixel_clock_raw: u16 = desc["Pixel clock (MHz)"]
         .as_f64()
@@ -1089,11 +1089,9 @@ fn decode_display_range_release_3(desc: &Value) -> EdidR3DisplayRangeLimits {
     };
 
     EdidR3DisplayRangeLimits::builder()
-        .min_hfreq(hrate_min)
-        .max_hfreq(hrate_max)
-        .min_vfreq(vrate_min)
-        .max_vfreq(vrate_max)
-        .max_pixelclock(pixel_clock)
+        .hfreq_khz(EdidDisplayRangeLimitsRangeFreq::try_from(hrate_min..hrate_max).unwrap())
+        .vfreq_hz(EdidDisplayRangeLimitsRangeFreq::try_from(vrate_min..vrate_max).unwrap())
+        .max_pixelclock_mhz(pixel_clock)
         .timings_support(timings_support)
         .build()
 }
@@ -1108,14 +1106,14 @@ fn decode_display_range_release_4(desc: &Value) -> EdidR4DisplayRangeLimits {
         .expect("Couldn't decode Display Range Minimum Horizontal frequency")
         .try_into()
         .unwrap();
-    let hrate_min: EdidR4DisplayRangeHorizontalFreq = hrate_min_raw.try_into().unwrap();
+    let hrate_min: EdidR4DisplayRangeLimitsFrequency = hrate_min_raw.try_into().unwrap();
 
     let hrate_max_raw: u16 = hrate["Maximum"]
         .as_u64()
         .expect("Couldn't decode Display Range Maximum Horizontal frequency")
         .try_into()
         .unwrap();
-    let hrate_max: EdidR4DisplayRangeHorizontalFreq = hrate_max_raw.try_into().unwrap();
+    let hrate_max: EdidR4DisplayRangeLimitsFrequency = hrate_max_raw.try_into().unwrap();
 
     let vrate = desc["Vertical rate (Hz)"]
         .as_object()
@@ -1126,14 +1124,14 @@ fn decode_display_range_release_4(desc: &Value) -> EdidR4DisplayRangeLimits {
         .expect("Couldn't decode Display Range Minimum Vertical frequency")
         .try_into()
         .unwrap();
-    let vrate_min: EdidR4DisplayRangeVerticalFreq = vrate_min_raw.try_into().unwrap();
+    let vrate_min: EdidR4DisplayRangeLimitsFrequency = vrate_min_raw.try_into().unwrap();
 
     let vrate_max_raw: u16 = vrate["Maximum"]
         .as_u64()
         .expect("Couldn't decode Display Range Maximum Vertical frequency")
         .try_into()
         .unwrap();
-    let vrate_max: EdidR4DisplayRangeVerticalFreq = vrate_max_raw.try_into().unwrap();
+    let vrate_max: EdidR4DisplayRangeLimitsFrequency = vrate_max_raw.try_into().unwrap();
 
     let pixel_clock_raw = desc["Pixel clock (MHz)"]
         .as_f64()
@@ -1157,11 +1155,9 @@ fn decode_display_range_release_4(desc: &Value) -> EdidR4DisplayRangeLimits {
     };
 
     EdidR4DisplayRangeLimits::builder()
-        .min_hfreq(hrate_min)
-        .max_hfreq(hrate_max)
-        .min_vfreq(vrate_min)
-        .max_vfreq(vrate_max)
-        .max_pixelclock(pixel_clock)
+        .hfreq_khz(EdidR4DisplayRangeLimitsRangeFreq::try_from(hrate_min..hrate_max).unwrap())
+        .vfreq_hz(EdidR4DisplayRangeLimitsRangeFreq::try_from(vrate_min..vrate_max).unwrap())
+        .max_pixelclock_mhz(pixel_clock)
         .timings_support(timings_support)
         .build()
 }
