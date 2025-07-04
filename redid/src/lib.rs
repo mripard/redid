@@ -37,14 +37,13 @@ pub use descriptors::{
     EdidDetailedTimingDigitalCompositeSync, EdidDetailedTimingDigitalSeparateSync,
     EdidDetailedTimingDigitalSync, EdidDetailedTimingDigitalSyncKind, EdidDetailedTimingPixelClock,
     EdidDetailedTimingSizeMm, EdidDetailedTimingStereo, EdidDetailedTimingSync,
-    EdidDisplayRangeHorizontalFreq, EdidDisplayRangePixelClock, EdidDisplayRangeVerticalFreq,
-    EdidDisplayRangeVideoTimingsGTF, EdidDisplayRangeVideoTimingsGTFStartFrequency,
-    EdidR3Descriptor, EdidR3DisplayRangeLimits, EdidR3DisplayRangeVideoTimingsSupport,
-    EdidR4Descriptor, EdidR4DescriptorEstablishedTimings, EdidR4DescriptorEstablishedTimingsIII,
-    EdidR4DisplayRangeHorizontalFreq, EdidR4DisplayRangeLimits, EdidR4DisplayRangeVerticalFreq,
-    EdidR4DisplayRangeVideoTimingsAspectRatio, EdidR4DisplayRangeVideoTimingsCVT,
-    EdidR4DisplayRangeVideoTimingsCVTPixelClockDiff, EdidR4DisplayRangeVideoTimingsCVTR1,
-    EdidR4DisplayRangeVideoTimingsSupport,
+    EdidDisplayRangeLimitsFrequency, EdidDisplayRangePixelClock, EdidDisplayRangeVideoTimingsGTF,
+    EdidDisplayRangeVideoTimingsGTFStartFrequency, EdidR3Descriptor, EdidR3DisplayRangeLimits,
+    EdidR3DisplayRangeVideoTimingsSupport, EdidR4Descriptor, EdidR4DescriptorEstablishedTimings,
+    EdidR4DescriptorEstablishedTimingsIII, EdidR4DisplayRangeLimits,
+    EdidR4DisplayRangeLimitsFrequency, EdidR4DisplayRangeVideoTimingsAspectRatio,
+    EdidR4DisplayRangeVideoTimingsCVT, EdidR4DisplayRangeVideoTimingsCVTPixelClockDiff,
+    EdidR4DisplayRangeVideoTimingsCVTR1, EdidR4DisplayRangeVideoTimingsSupport,
 };
 
 mod extensions;
@@ -2226,16 +2225,16 @@ mod test_edid_release4 {
         EdidDescriptorDetailedTiming, EdidDescriptorString, EdidDetailedTimingDigitalSeparateSync,
         EdidDetailedTimingDigitalSync, EdidDetailedTimingDigitalSyncKind, EdidDetailedTimingSizeMm,
         EdidDetailedTimingStereo, EdidDetailedTimingSync, EdidDisplayColorType,
-        EdidDisplayRangePixelClock, EdidDisplayRangeVerticalFreq,
+        EdidDisplayRangeLimitsFrequency, EdidDisplayRangePixelClock,
         EdidDisplayTransferCharacteristics, EdidEstablishedTiming, EdidFilterChromaticity,
         EdidManufacturer, EdidProductCode, EdidR4BasicDisplayParametersFeatures, EdidR4Date,
         EdidR4Descriptor, EdidR4DescriptorEstablishedTimings,
-        EdidR4DescriptorEstablishedTimingsIII, EdidR4DisplayColor,
-        EdidR4DisplayRangeHorizontalFreq, EdidR4DisplayRangeLimits, EdidR4DisplayRangeVerticalFreq,
-        EdidR4DisplayRangeVideoTimingsAspectRatio, EdidR4DisplayRangeVideoTimingsCVT,
-        EdidR4DisplayRangeVideoTimingsCVTR1, EdidR4DisplayRangeVideoTimingsSupport,
-        EdidR4FeatureSupport, EdidR4ImageSize, EdidR4ManufactureDate, EdidR4VideoInputDefinition,
-        EdidRelease4, EdidScreenSize, EdidScreenSizeLength, EdidSerialNumber, EdidStandardTiming,
+        EdidR4DescriptorEstablishedTimingsIII, EdidR4DisplayColor, EdidR4DisplayRangeLimits,
+        EdidR4DisplayRangeLimitsFrequency, EdidR4DisplayRangeVideoTimingsAspectRatio,
+        EdidR4DisplayRangeVideoTimingsCVT, EdidR4DisplayRangeVideoTimingsCVTR1,
+        EdidR4DisplayRangeVideoTimingsSupport, EdidR4FeatureSupport, EdidR4ImageSize,
+        EdidR4ManufactureDate, EdidR4VideoInputDefinition, EdidRelease4, EdidScreenSize,
+        EdidScreenSizeLength, EdidSerialNumber, EdidStandardTiming,
         EdidStandardTimingHorizontalSize, EdidStandardTimingRatio, EdidStandardTimingRefreshRate,
         IntoBytes,
     };
@@ -2391,10 +2390,10 @@ mod test_edid_release4 {
             .descriptors(vec![
                 EdidR4Descriptor::DisplayRangeLimits(
                     EdidR4DisplayRangeLimits::builder()
-                        .min_vfreq_hz(EdidR4DisplayRangeVerticalFreq::try_from(50).unwrap())
-                        .max_vfreq_hz(EdidR4DisplayRangeVerticalFreq::try_from(90).unwrap())
-                        .min_hfreq_khz(EdidR4DisplayRangeHorizontalFreq::try_from(30).unwrap())
-                        .max_hfreq_khz(EdidR4DisplayRangeHorizontalFreq::try_from(110).unwrap())
+                        .min_vfreq_hz(EdidR4DisplayRangeLimitsFrequency::try_from(50).unwrap())
+                        .max_vfreq_hz(EdidR4DisplayRangeLimitsFrequency::try_from(90).unwrap())
+                        .min_hfreq_khz(EdidR4DisplayRangeLimitsFrequency::try_from(30).unwrap())
+                        .max_hfreq_khz(EdidR4DisplayRangeLimitsFrequency::try_from(110).unwrap())
                         .max_pixelclock_mhz(EdidDisplayRangePixelClock::try_from(230).unwrap())
                         .timings_support(EdidR4DisplayRangeVideoTimingsSupport::CVTSupported(
                             EdidR4DisplayRangeVideoTimingsCVT::R1(
@@ -2411,7 +2410,7 @@ mod test_edid_release4 {
                                     .horizontal_stretch_supported(true)
                                     .vertical_stretch_supported(true)
                                     .preferred_vertical_refresh_rate(
-                                        EdidDisplayRangeVerticalFreq::try_from(60).unwrap(),
+                                        EdidDisplayRangeLimitsFrequency::try_from(60).unwrap(),
                                     )
                                     .build(),
                             ),

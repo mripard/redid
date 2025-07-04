@@ -1,4 +1,4 @@
-use core::{cmp, fmt};
+use core::{cmp, fmt, num::NonZero};
 
 use encoding::{all::ISO_8859_1, EncoderTrap, Encoding as _};
 use num_traits::{Bounded, CheckedShl, Num, ToPrimitive as _, WrappingSub};
@@ -704,37 +704,18 @@ impl IntoBytes for EdidDescriptorDetailedTiming {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 #[cfg_attr(feature = "serde", derive(Deserialize))]
 #[cfg_attr(feature = "serde", serde(try_from = "u8"))]
-pub struct EdidDisplayRangeHorizontalFreq(u8);
+pub struct EdidDisplayRangeLimitsFrequency(NonZero<u8>);
 
-impl TryFrom<u8> for EdidDisplayRangeHorizontalFreq {
+impl TryFrom<u8> for EdidDisplayRangeLimitsFrequency {
     type Error = EdidTypeConversionError<u8>;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
-        if value == 0 {
-            return Err(EdidTypeConversionError::Range(value, Some(1), None));
-        }
-
-        Ok(Self(value))
-    }
-}
-
-#[derive(Clone, Copy, Debug)]
-#[cfg_attr(feature = "serde", derive(Deserialize))]
-#[cfg_attr(feature = "serde", serde(try_from = "u8"))]
-pub struct EdidDisplayRangeVerticalFreq(u8);
-
-impl TryFrom<u8> for EdidDisplayRangeVerticalFreq {
-    type Error = EdidTypeConversionError<u8>;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        if value == 0 {
-            return Err(EdidTypeConversionError::Range(value, Some(1), None));
-        }
-
-        Ok(Self(value))
+        Ok(Self(NonZero::new(value).ok_or(
+            EdidTypeConversionError::Value(String::from("Frequency cannot be 0.")),
+        )?))
     }
 }
 
@@ -836,10 +817,10 @@ pub enum EdidR3DisplayRangeVideoTimingsSupport {
 #[cfg_attr(feature = "serde", derive(Deserialize))]
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidR3DisplayRangeLimits {
-    min_hfreq_khz: EdidDisplayRangeHorizontalFreq,
-    max_hfreq_khz: EdidDisplayRangeHorizontalFreq,
-    min_vfreq_hz: EdidDisplayRangeVerticalFreq,
-    max_vfreq_hz: EdidDisplayRangeVerticalFreq,
+    min_hfreq_khz: EdidDisplayRangeLimitsFrequency,
+    max_hfreq_khz: EdidDisplayRangeLimitsFrequency,
+    min_vfreq_hz: EdidDisplayRangeLimitsFrequency,
+    max_vfreq_hz: EdidDisplayRangeLimitsFrequency,
     max_pixelclock_mhz: EdidDisplayRangePixelClock,
 
     timings_support: EdidR3DisplayRangeVideoTimingsSupport,
@@ -849,10 +830,10 @@ impl IntoBytes for EdidR3DisplayRangeLimits {
     fn into_bytes(self) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(EDID_DESCRIPTOR_PAYLOAD_LEN);
 
-        bytes.push(self.min_vfreq_hz.0);
-        bytes.push(self.max_vfreq_hz.0);
-        bytes.push(self.min_hfreq_khz.0);
-        bytes.push(self.max_hfreq_khz.0);
+        bytes.push(self.min_vfreq_hz.0.get());
+        bytes.push(self.max_vfreq_hz.0.get());
+        bytes.push(self.min_hfreq_khz.0.get());
+        bytes.push(self.max_hfreq_khz.0.get());
         bytes.push(self.max_pixelclock_mhz.into_raw());
 
         match self.timings_support {
@@ -890,55 +871,31 @@ impl IntoBytes for EdidR3DisplayRangeLimits {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 #[cfg_attr(feature = "serde", derive(Deserialize))]
 #[cfg_attr(feature = "serde", serde(try_from = "u16"))]
-pub struct EdidR4DisplayRangeHorizontalFreq(bool, u8);
+pub struct EdidR4DisplayRangeLimitsFrequency(u16);
 
-impl TryFrom<u16> for EdidR4DisplayRangeHorizontalFreq {
+impl TryFrom<u16> for EdidR4DisplayRangeLimitsFrequency {
     type Error = EdidTypeConversionError<u16>;
 
     fn try_from(value: u16) -> Result<Self, Self::Error> {
-        if !(1..=510).contains(&value) {
-            return Err(EdidTypeConversionError::Range(value, Some(1), Some(510)));
+        if value == 0 {
+            return Err(EdidTypeConversionError::Value(String::from(
+                "Frequency cannot be 0.",
+            )));
         }
 
-        let mut value = value;
-        let offset = if value > 255 {
-            value -= 255;
-            true
-        } else {
-            false
-        };
+        if value > 510 {
+            return Err(EdidTypeConversionError::Value(String::from(
+                "Frequency cannot be higher than 510.",
+            )));
+        }
 
-        Ok(Self(offset, u8::try_from(value)?))
+        Ok(Self(value))
     }
 }
 
-#[derive(Clone, Copy, Debug)]
-#[cfg_attr(feature = "serde", derive(Deserialize))]
-#[cfg_attr(feature = "serde", serde(try_from = "u16"))]
-pub struct EdidR4DisplayRangeVerticalFreq(bool, u8);
-
-impl TryFrom<u16> for EdidR4DisplayRangeVerticalFreq {
-    type Error = EdidTypeConversionError<u16>;
-
-    fn try_from(value: u16) -> Result<Self, Self::Error> {
-        if !(1..=510).contains(&value) {
-            return Err(EdidTypeConversionError::Range(value, Some(1), Some(510)));
-        }
-
-        let mut value = value;
-        let offset = if value > 255 {
-            value -= 255;
-            true
-        } else {
-            false
-        };
-
-        Ok(Self(offset, u8::try_from(value)?))
-    }
-}
 #[repr(u8)]
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy, Debug)]
@@ -1041,7 +998,7 @@ pub struct EdidR4DisplayRangeVideoTimingsCVTR1 {
     vertical_stretch_supported: bool,
 
     #[builder(setter(into))]
-    preferred_vertical_refresh_rate: EdidDisplayRangeVerticalFreq,
+    preferred_vertical_refresh_rate: EdidDisplayRangeLimitsFrequency,
 }
 
 #[derive(Clone, Debug)]
@@ -1081,16 +1038,16 @@ pub use vid_timing::EdidR4DisplayRangeVideoTimingsSupport;
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidR4DisplayRangeLimits {
     #[builder(setter(into))]
-    min_hfreq_khz: EdidR4DisplayRangeHorizontalFreq,
+    min_hfreq_khz: EdidR4DisplayRangeLimitsFrequency,
 
     #[builder(setter(into))]
-    max_hfreq_khz: EdidR4DisplayRangeHorizontalFreq,
+    max_hfreq_khz: EdidR4DisplayRangeLimitsFrequency,
 
     #[builder(setter(into))]
-    min_vfreq_hz: EdidR4DisplayRangeVerticalFreq,
+    min_vfreq_hz: EdidR4DisplayRangeLimitsFrequency,
 
     #[builder(setter(into))]
-    max_vfreq_hz: EdidR4DisplayRangeVerticalFreq,
+    max_vfreq_hz: EdidR4DisplayRangeLimitsFrequency,
 
     #[builder(setter(into))]
     max_pixelclock_mhz: EdidDisplayRangePixelClock,
@@ -1104,27 +1061,32 @@ impl IntoBytes for EdidR4DisplayRangeLimits {
         let mut bytes = Vec::with_capacity(EDID_DESCRIPTOR_PAYLOAD_LEN + 1);
 
         let mut flags_byte = 0;
-        if self.max_vfreq_hz.0 {
+        let [min_hfreq_hi, min_hfreq_lo] = self.min_hfreq_khz.0.to_be_bytes();
+        let [max_hfreq_hi, max_hfreq_lo] = self.max_hfreq_khz.0.to_be_bytes();
+        let [min_vfreq_hi, min_vfreq_lo] = self.min_vfreq_hz.0.to_be_bytes();
+        let [max_vfreq_hi, max_vfreq_lo] = self.max_vfreq_hz.0.to_be_bytes();
+
+        if max_vfreq_hi > 0 {
             flags_byte |= 1 << 1;
 
-            if self.min_vfreq_hz.0 {
+            if min_vfreq_hi > 0 {
                 flags_byte |= 1 << 0;
             }
         }
 
-        if self.max_hfreq_khz.0 {
+        if max_hfreq_hi > 0 {
             flags_byte |= 1 << 3;
 
-            if self.min_hfreq_khz.0 {
+            if min_hfreq_hi > 0 {
                 flags_byte |= 1 << 2;
             }
         }
 
         bytes.push(flags_byte);
-        bytes.push(self.min_vfreq_hz.1);
-        bytes.push(self.max_vfreq_hz.1);
-        bytes.push(self.min_hfreq_khz.1);
-        bytes.push(self.max_hfreq_khz.1);
+        bytes.push(min_vfreq_lo);
+        bytes.push(max_vfreq_lo);
+        bytes.push(min_hfreq_lo);
+        bytes.push(max_hfreq_lo);
         bytes.push(self.max_pixelclock_mhz.into_raw());
 
         match self.timings_support {
@@ -1200,7 +1162,7 @@ impl IntoBytes for EdidR4DisplayRangeLimits {
                             byte |= 1 << 4;
                         }
                         bytes.push(byte);
-                        bytes.push(cvt.preferred_vertical_refresh_rate.0);
+                        bytes.push(cvt.preferred_vertical_refresh_rate.0.get());
                     }
                 }
             }
