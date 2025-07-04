@@ -18,7 +18,7 @@ use redid::{
     EdidDetailedTimingDigitalCompositeSync, EdidDetailedTimingDigitalSeparateSync,
     EdidDetailedTimingDigitalSync, EdidDetailedTimingDigitalSyncKind, EdidDetailedTimingStereo,
     EdidDetailedTimingSync, EdidDisplayColorType, EdidDisplayRangeLimitsFrequency,
-    EdidDisplayRangePixelClock, EdidDisplayRangeVideoTimingsGTF,
+    EdidDisplayRangeLimitsRangeFreq, EdidDisplayRangePixelClock, EdidDisplayRangeVideoTimingsGTF,
     EdidDisplayRangeVideoTimingsGTFStartFrequency, EdidDisplayTransferCharacteristics,
     EdidEstablishedTiming, EdidFilterChromaticity, EdidManufactureDate, EdidManufacturer,
     EdidProductCode, EdidR3BasicDisplayParametersFeatures, EdidR3Descriptor,
@@ -28,12 +28,13 @@ use redid::{
     EdidR4DescriptorEstablishedTimings, EdidR4DescriptorEstablishedTimingsIII,
     EdidR4DigitalColorDepth, EdidR4DigitalInterface, EdidR4DigitalVideoInputDefinition,
     EdidR4DisplayColor, EdidR4DisplayColorEncoding, EdidR4DisplayRangeLimits,
-    EdidR4DisplayRangeLimitsFrequency, EdidR4DisplayRangeVideoTimingsAspectRatio,
-    EdidR4DisplayRangeVideoTimingsCVT, EdidR4DisplayRangeVideoTimingsCVTR1,
-    EdidR4DisplayRangeVideoTimingsSupport, EdidR4FeatureSupport, EdidR4ImageSize,
-    EdidR4ManufactureDate, EdidR4VideoInputDefinition, EdidRelease3, EdidRelease4, EdidScreenSize,
-    EdidSerialNumber, EdidStandardTiming, EdidStandardTimingHorizontalSize,
-    EdidStandardTimingRatio, EdidStandardTimingRefreshRate, IntoBytes,
+    EdidR4DisplayRangeLimitsFrequency, EdidR4DisplayRangeLimitsRangeFreq,
+    EdidR4DisplayRangeVideoTimingsAspectRatio, EdidR4DisplayRangeVideoTimingsCVT,
+    EdidR4DisplayRangeVideoTimingsCVTR1, EdidR4DisplayRangeVideoTimingsSupport,
+    EdidR4FeatureSupport, EdidR4ImageSize, EdidR4ManufactureDate, EdidR4VideoInputDefinition,
+    EdidRelease3, EdidRelease4, EdidScreenSize, EdidSerialNumber, EdidStandardTiming,
+    EdidStandardTimingHorizontalSize, EdidStandardTimingRatio, EdidStandardTimingRefreshRate,
+    IntoBytes,
 };
 use uom::si::{f32::Frequency, frequency::kilohertz};
 
@@ -1088,10 +1089,8 @@ fn decode_display_range_release_3(desc: &Value) -> EdidR3DisplayRangeLimits {
     };
 
     EdidR3DisplayRangeLimits::builder()
-        .min_hfreq_khz(hrate_min)
-        .max_hfreq_khz(hrate_max)
-        .min_vfreq_hz(vrate_min)
-        .max_vfreq_hz(vrate_max)
+        .hfreq_khz(EdidDisplayRangeLimitsRangeFreq::try_from(hrate_min..hrate_max).unwrap())
+        .vfreq_hz(EdidDisplayRangeLimitsRangeFreq::try_from(vrate_min..vrate_max).unwrap())
         .max_pixelclock_mhz(pixel_clock)
         .timings_support(timings_support)
         .build()
@@ -1156,10 +1155,8 @@ fn decode_display_range_release_4(desc: &Value) -> EdidR4DisplayRangeLimits {
     };
 
     EdidR4DisplayRangeLimits::builder()
-        .min_hfreq_khz(hrate_min)
-        .max_hfreq_khz(hrate_max)
-        .min_vfreq_hz(vrate_min)
-        .max_vfreq_hz(vrate_max)
+        .hfreq_khz(EdidR4DisplayRangeLimitsRangeFreq::try_from(hrate_min..hrate_max).unwrap())
+        .vfreq_hz(EdidR4DisplayRangeLimitsRangeFreq::try_from(vrate_min..vrate_max).unwrap())
         .max_pixelclock_mhz(pixel_clock)
         .timings_support(timings_support)
         .build()

@@ -74,8 +74,12 @@ edid:
 
     - display_range_limits:
         max_pixelclock_mhz: 150
-        min_hfreq_khz: 30
-        max_hfreq_khz: 70
-        min_vfreq_hz: 50
-        max_vfreq_hz: 70
+        hfreq_khz:
+          min: 30
+          max: 70
+
+        vfreq_hz:
+          min: 50
+          max: 70
+
         timings_support: default_gtf
