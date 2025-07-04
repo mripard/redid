@@ -2391,11 +2391,11 @@ mod test_edid_release4 {
             .descriptors(vec![
                 EdidR4Descriptor::DisplayRangeLimits(
                     EdidR4DisplayRangeLimits::builder()
-                        .min_vfreq(EdidR4DisplayRangeVerticalFreq::try_from(50).unwrap())
-                        .max_vfreq(EdidR4DisplayRangeVerticalFreq::try_from(90).unwrap())
-                        .min_hfreq(EdidR4DisplayRangeHorizontalFreq::try_from(30).unwrap())
-                        .max_hfreq(EdidR4DisplayRangeHorizontalFreq::try_from(110).unwrap())
-                        .max_pixelclock(EdidDisplayRangePixelClock::try_from(230).unwrap())
+                        .min_vfreq_hz(EdidR4DisplayRangeVerticalFreq::try_from(50).unwrap())
+                        .max_vfreq_hz(EdidR4DisplayRangeVerticalFreq::try_from(90).unwrap())
+                        .min_hfreq_khz(EdidR4DisplayRangeHorizontalFreq::try_from(30).unwrap())
+                        .max_hfreq_khz(EdidR4DisplayRangeHorizontalFreq::try_from(110).unwrap())
+                        .max_pixelclock_mhz(EdidDisplayRangePixelClock::try_from(230).unwrap())
                         .timings_support(EdidR4DisplayRangeVideoTimingsSupport::CVTSupported(
                             EdidR4DisplayRangeVideoTimingsCVT::R1(
                                 EdidR4DisplayRangeVideoTimingsCVTR1::builder()

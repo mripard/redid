@@ -836,11 +836,11 @@ pub enum EdidR3DisplayRangeVideoTimingsSupport {
 #[cfg_attr(feature = "serde", derive(Deserialize))]
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidR3DisplayRangeLimits {
-    min_hfreq: EdidDisplayRangeHorizontalFreq,
-    max_hfreq: EdidDisplayRangeHorizontalFreq,
-    min_vfreq: EdidDisplayRangeVerticalFreq,
-    max_vfreq: EdidDisplayRangeVerticalFreq,
-    max_pixelclock: EdidDisplayRangePixelClock,
+    min_hfreq_khz: EdidDisplayRangeHorizontalFreq,
+    max_hfreq_khz: EdidDisplayRangeHorizontalFreq,
+    min_vfreq_hz: EdidDisplayRangeVerticalFreq,
+    max_vfreq_hz: EdidDisplayRangeVerticalFreq,
+    max_pixelclock_mhz: EdidDisplayRangePixelClock,
 
     timings_support: EdidR3DisplayRangeVideoTimingsSupport,
 }
@@ -849,11 +849,11 @@ impl IntoBytes for EdidR3DisplayRangeLimits {
     fn into_bytes(self) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(EDID_DESCRIPTOR_PAYLOAD_LEN);
 
-        bytes.push(self.min_vfreq.0);
-        bytes.push(self.max_vfreq.0);
-        bytes.push(self.min_hfreq.0);
-        bytes.push(self.max_hfreq.0);
-        bytes.push(self.max_pixelclock.into_raw());
+        bytes.push(self.min_vfreq_hz.0);
+        bytes.push(self.max_vfreq_hz.0);
+        bytes.push(self.min_hfreq_khz.0);
+        bytes.push(self.max_hfreq_khz.0);
+        bytes.push(self.max_pixelclock_mhz.into_raw());
 
         match self.timings_support {
             EdidR3DisplayRangeVideoTimingsSupport::DefaultGTF => {
@@ -1081,19 +1081,19 @@ pub use vid_timing::EdidR4DisplayRangeVideoTimingsSupport;
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidR4DisplayRangeLimits {
     #[builder(setter(into))]
-    min_hfreq: EdidR4DisplayRangeHorizontalFreq,
+    min_hfreq_khz: EdidR4DisplayRangeHorizontalFreq,
 
     #[builder(setter(into))]
-    max_hfreq: EdidR4DisplayRangeHorizontalFreq,
+    max_hfreq_khz: EdidR4DisplayRangeHorizontalFreq,
 
     #[builder(setter(into))]
-    min_vfreq: EdidR4DisplayRangeVerticalFreq,
+    min_vfreq_hz: EdidR4DisplayRangeVerticalFreq,
 
     #[builder(setter(into))]
-    max_vfreq: EdidR4DisplayRangeVerticalFreq,
+    max_vfreq_hz: EdidR4DisplayRangeVerticalFreq,
 
     #[builder(setter(into))]
-    max_pixelclock: EdidDisplayRangePixelClock,
+    max_pixelclock_mhz: EdidDisplayRangePixelClock,
 
     timings_support: EdidR4DisplayRangeVideoTimingsSupport,
 }
@@ -1104,28 +1104,28 @@ impl IntoBytes for EdidR4DisplayRangeLimits {
         let mut bytes = Vec::with_capacity(EDID_DESCRIPTOR_PAYLOAD_LEN + 1);
 
         let mut flags_byte = 0;
-        if self.max_vfreq.0 {
+        if self.max_vfreq_hz.0 {
             flags_byte |= 1 << 1;
 
-            if self.min_vfreq.0 {
+            if self.min_vfreq_hz.0 {
                 flags_byte |= 1 << 0;
             }
         }
 
-        if self.max_hfreq.0 {
+        if self.max_hfreq_khz.0 {
             flags_byte |= 1 << 3;
 
-            if self.min_hfreq.0 {
+            if self.min_hfreq_khz.0 {
                 flags_byte |= 1 << 2;
             }
         }
 
         bytes.push(flags_byte);
-        bytes.push(self.min_vfreq.1);
-        bytes.push(self.max_vfreq.1);
-        bytes.push(self.min_hfreq.1);
-        bytes.push(self.max_hfreq.1);
-        bytes.push(self.max_pixelclock.into_raw());
+        bytes.push(self.min_vfreq_hz.1);
+        bytes.push(self.max_vfreq_hz.1);
+        bytes.push(self.min_hfreq_khz.1);
+        bytes.push(self.max_hfreq_khz.1);
+        bytes.push(self.max_pixelclock_mhz.into_raw());
 
         match self.timings_support {
             EdidR4DisplayRangeVideoTimingsSupport::DefaultGTF => {
@@ -1157,7 +1157,7 @@ impl IntoBytes for EdidR4DisplayRangeLimits {
 
                         // FIXME: Check that it fits in 6 bits.
                         let pclk_diff = EdidR4DisplayRangeVideoTimingsCVTPixelClockDiff::try_from(
-                            self.max_pixelclock,
+                            self.max_pixelclock_mhz,
                         )
                         .expect("Pixel Clock value would overflow our type")
                         .into_raw();

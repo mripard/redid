@@ -1089,11 +1089,11 @@ fn decode_display_range_release_3(desc: &Value) -> EdidR3DisplayRangeLimits {
     };
 
     EdidR3DisplayRangeLimits::builder()
-        .min_hfreq(hrate_min)
-        .max_hfreq(hrate_max)
-        .min_vfreq(vrate_min)
-        .max_vfreq(vrate_max)
-        .max_pixelclock(pixel_clock)
+        .min_hfreq_khz(hrate_min)
+        .max_hfreq_khz(hrate_max)
+        .min_vfreq_hz(vrate_min)
+        .max_vfreq_hz(vrate_max)
+        .max_pixelclock_mhz(pixel_clock)
         .timings_support(timings_support)
         .build()
 }
@@ -1157,11 +1157,11 @@ fn decode_display_range_release_4(desc: &Value) -> EdidR4DisplayRangeLimits {
     };
 
     EdidR4DisplayRangeLimits::builder()
-        .min_hfreq(hrate_min)
-        .max_hfreq(hrate_max)
-        .min_vfreq(vrate_min)
-        .max_vfreq(vrate_max)
-        .max_pixelclock(pixel_clock)
+        .min_hfreq_khz(hrate_min)
+        .max_hfreq_khz(hrate_max)
+        .min_vfreq_hz(vrate_min)
+        .max_vfreq_hz(vrate_max)
+        .max_pixelclock_mhz(pixel_clock)
         .timings_support(timings_support)
         .build()
 }

@@ -73,9 +73,9 @@ edid:
     - product_name: Test EDID
 
     - display_range_limits:
-        max_pixelclock: 150
-        min_hfreq: 30
-        max_hfreq: 70
-        min_vfreq: 50
-        max_vfreq: 70
+        max_pixelclock_mhz: 150
+        min_hfreq_khz: 30
+        max_hfreq_khz: 70
+        min_vfreq_hz: 50
+        max_vfreq_hz: 70
         timings_support: default_gtf
