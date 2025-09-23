@@ -214,6 +214,76 @@ impl IntoBytes for EdidDescriptorString {
     }
 }
 
+/// Descriptor defined by manufacturer.
+/// Defined in EDID 1.4 Specification, Section 3.10.3.12.
+#[derive(Clone, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+pub struct EdidDescriptorManufacturer {
+    /// Data tag numbers from 0x00 to 0x0F
+    data_tag_number: u8,
+    /// Vendor-specific data
+    vendor_data: Vec<u8>,
+}
+
+impl TryFrom<(u8, Vec<u8>)> for EdidDescriptorManufacturer {
+    type Error = EdidTypeConversionError<u8>;
+
+    fn try_from(value: (u8, Vec<u8>)) -> Result<Self, Self::Error> {
+        let data_tag_number = value.0;
+        let vendor_data = value.1;
+
+        if data_tag_number > 0x0F {
+            return Err(EdidTypeConversionError::Range(
+                data_tag_number,
+                Some(0x00),
+                Some(0x0F),
+            ));
+        }
+
+        if vendor_data.len() > EDID_DESCRIPTOR_PAYLOAD_LEN {
+            return Err(EdidTypeConversionError::Value(format!(
+                "Vendor data is too long, maximum length is {EDID_DESCRIPTOR_PAYLOAD_LEN} bytes",
+            )));
+        }
+
+        Ok(Self {
+            data_tag_number,
+            vendor_data,
+        })
+    }
+}
+
+impl TryFrom<(u8, &[u8])> for EdidDescriptorManufacturer {
+    type Error = EdidTypeConversionError<u8>;
+
+    fn try_from(value: (u8, &[u8])) -> Result<Self, Self::Error> {
+        (value.0, value.1.to_vec()).try_into()
+    }
+}
+
+impl IntoBytes for EdidDescriptorManufacturer {
+    fn into_bytes(self) -> Vec<u8> {
+        let mut bytes = Vec::with_capacity(EDID_DESCRIPTOR_PAYLOAD_LEN);
+        bytes.extend_from_slice(&self.vendor_data);
+
+        assert!(
+            bytes.len() <= EDID_DESCRIPTOR_PAYLOAD_LEN,
+            "Serialized manufacturer descriptor data is too large ({} vs expected {})",
+            bytes.len(),
+            EDID_DESCRIPTOR_PAYLOAD_LEN
+        );
+
+        bytes.resize(EDID_DESCRIPTOR_PAYLOAD_LEN, 0x00);
+
+        bytes
+    }
+
+    fn size(&self) -> usize {
+        EDID_DESCRIPTOR_PAYLOAD_LEN
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "serde", derive(Deserialize))]
 #[cfg_attr(feature = "serde", serde(try_from = "u32"))]
@@ -1409,6 +1479,7 @@ pub enum EdidR3Descriptor {
     DisplayRangeLimits(EdidR3DisplayRangeLimits),
     DataString(EdidDescriptorString),
     ProductSerialNumber(EdidDescriptorString),
+    Manufacturer(EdidDescriptorManufacturer),
 }
 
 impl IntoBytes for EdidR3Descriptor {
@@ -1451,6 +1522,14 @@ impl IntoBytes for EdidR3Descriptor {
 
                 bytes
             }
+            Self::Manufacturer(m) => {
+                let mut bytes: Vec<u8> = Vec::with_capacity(EDID_DESCRIPTOR_LEN);
+
+                bytes.extend_from_slice(&[0, 0, 0, m.data_tag_number, 0]);
+                bytes.extend_from_slice(&m.into_bytes());
+
+                bytes
+            }
         };
 
         assert_eq!(
@@ -1485,6 +1564,7 @@ pub enum EdidR4Descriptor {
     DisplayRangeLimits(EdidR4DisplayRangeLimits),
     DataString(EdidDescriptorString),
     ProductSerialNumber(EdidDescriptorString),
+    Manufacturer(EdidDescriptorManufacturer),
 }
 
 impl IntoBytes for EdidR4Descriptor {
@@ -1516,6 +1596,7 @@ impl IntoBytes for EdidR4Descriptor {
             }
             Self::DataString(v) => EdidR3Descriptor::DataString(v).into_bytes(),
             Self::ProductSerialNumber(v) => EdidR3Descriptor::ProductSerialNumber(v).into_bytes(),
+            Self::Manufacturer(m) => EdidR3Descriptor::Manufacturer(m).into_bytes(),
         };
 
         assert_eq!(
@@ -1536,7 +1617,7 @@ impl IntoBytes for EdidR4Descriptor {
 
 #[cfg(test)]
 mod tests {
-    use crate::{EdidR4Descriptor, IntoBytes};
+    use crate::{EdidDescriptorManufacturer, EdidR4Descriptor, IntoBytes};
 
     #[test]
     fn test_descriptor_product_name_spec() {
@@ -1571,6 +1652,120 @@ mod tests {
                 0x38, 0x39, 0x0A, 0x20,
             ]
         );
+    }
+
+    #[test]
+    fn test_descriptor_manufacturer_spec_valid_from_vec() {
+        let data_tag_number: u8 = 0x00;
+        let vendor_data: Vec<u8> = vec![0xED, 0xD1, 0xD0, 0x00];
+
+        assert_eq!(
+            EdidR4Descriptor::Manufacturer((data_tag_number, vendor_data).try_into().unwrap())
+                .into_bytes(),
+            [
+                0x00, 0x00, 0x00, 0x00, 0x00, 0xED, 0xD1, 0xD0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00,
+            ]
+        );
+    }
+
+    #[test]
+    fn test_descriptor_manufacturer_spec_valid_from_array() {
+        let data_tag_number: u8 = 0x0F;
+        let vendor_data: &[u8] = &[0xC0, 0xFF, 0xEE];
+
+        assert_eq!(
+            EdidR4Descriptor::Manufacturer((data_tag_number, vendor_data).try_into().unwrap())
+                .into_bytes(),
+            [
+                0x00, 0x00, 0x00, 0x0F, 0x00, 0xC0, 0xFF, 0xEE, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00,
+            ]
+        );
+    }
+
+    #[test]
+    fn test_descriptor_manufacturer_spec_valid_with_builder() {
+        let data_tag_number: u8 = 0x01;
+        let vendor_data: Vec<u8> = vec![
+            0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D,
+        ];
+
+        assert_eq!(
+            EdidR4Descriptor::Manufacturer(
+                EdidDescriptorManufacturer::builder()
+                    .data_tag_number(data_tag_number)
+                    .vendor_data(vendor_data)
+                    .build(),
+            )
+            .into_bytes(),
+            [
+                0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09,
+                0x0A, 0x0B, 0x0C, 0x0D,
+            ]
+        );
+    }
+
+    #[test]
+    fn test_descriptor_manufacturer_spec_invalid_data_tag_number() {
+        let data_tag_number: u8 = 0x10;
+        let vendor_data: &[u8] = &[0xC0, 0xFF, 0xEE];
+
+        assert_eq!(
+            EdidDescriptorManufacturer::try_from((data_tag_number, vendor_data))
+                .expect_err("Should fail")
+                .to_string(),
+            "Value out of range: 16 (Range: 0..=15)"
+        );
+    }
+
+    #[test]
+    fn test_descriptor_manufacturer_spec_vendor_data_vec_too_long() {
+        let data_tag_number: u8 = 0x01;
+        let vendor_data: Vec<u8> = vec![
+            0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E,
+        ];
+
+        assert_eq!(
+            EdidDescriptorManufacturer::try_from((data_tag_number, vendor_data))
+                .expect_err("Should fail")
+                .to_string(),
+            "Invalid Value: Vendor data is too long, maximum length is 13 bytes"
+        );
+    }
+
+    #[test]
+    fn test_descriptor_manufacturer_spec_vendor_data_array_too_long() {
+        let data_tag_number: u8 = 0x02;
+        let vendor_data: &[u8] = &[
+            0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E,
+        ];
+
+        assert_eq!(
+            EdidDescriptorManufacturer::try_from((data_tag_number, vendor_data))
+                .expect_err("Should fail")
+                .to_string(),
+            "Invalid Value: Vendor data is too long, maximum length is 13 bytes"
+        );
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "Serialized manufacturer descriptor data is too large (14 vs expected 13)"
+    )]
+    fn test_descriptor_manufacturer_spec_vendor_data_too_long_with_builder() {
+        let data_tag_number: u8 = 0x10;
+        let vendor_data: Vec<u8> = vec![
+            0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E,
+        ];
+
+        EdidR4Descriptor::Manufacturer(
+            EdidDescriptorManufacturer::builder()
+                .data_tag_number(data_tag_number)
+                .vendor_data(vendor_data)
+                .build(),
+        )
+        .into_bytes();
     }
 }
 
