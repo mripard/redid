@@ -64,7 +64,7 @@ impl TryFrom<u8> for EdidDescriptorCustomTag {
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         if value > 0x0f {
-            Err(EdidTypeConversionError::Range(value, Some(0), Some(0x10)))
+            Err(EdidTypeConversionError::Range(value, Some(0), Some(0x0f)))
         } else {
             Ok(Self(value))
         }
