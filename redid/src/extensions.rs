@@ -5,7 +5,9 @@ use typed_builder::TypedBuilder;
 
 use crate::{EdidDescriptorDetailedTiming, EdidTypeConversionError, IntoBytes};
 
-const EDID_EXTENSION_CTA_861_LEN: usize = 128;
+/// EDID extension block length.
+/// Defined in EDID 1.4 Specification, Section 2.2.
+const EDID_EXTENSION_LEN: usize = 128;
 
 const EDID_EXTENSION_CTA_861_DATA_BLOCK_HEADER_LEN: usize = 1;
 const EDID_EXTENSION_CTA_861_AUDIO_DESCRIPTOR_LEN: usize = 3;
@@ -914,7 +916,7 @@ pub struct EdidExtensionCTA861Revision3 {
 
 impl IntoBytes for EdidExtensionCTA861Revision3 {
     fn into_bytes(self) -> Vec<u8> {
-        let mut data: Vec<u8> = Vec::with_capacity(EDID_EXTENSION_CTA_861_LEN);
+        let mut data: Vec<u8> = Vec::with_capacity(EDID_EXTENSION_LEN);
 
         data.extend_from_slice(&[0x02, 0x03]);
 
@@ -957,7 +959,7 @@ impl IntoBytes for EdidExtensionCTA861Revision3 {
             data.extend_from_slice(&timing.into_bytes());
         }
 
-        data.resize(EDID_EXTENSION_CTA_861_LEN - 1, 0);
+        data.resize(EDID_EXTENSION_LEN - 1, 0);
 
         let mut sum: u8 = 0;
         for byte in &data {
@@ -969,17 +971,17 @@ impl IntoBytes for EdidExtensionCTA861Revision3 {
 
         assert_eq!(
             data.len(),
-            EDID_EXTENSION_CTA_861_LEN,
+            EDID_EXTENSION_LEN,
             "EDID CTA-861 Extension is larger than it should ({} vs expected {} bytes)",
             data.len(),
-            EDID_EXTENSION_CTA_861_LEN
+            EDID_EXTENSION_LEN
         );
 
         data
     }
 
     fn size(&self) -> usize {
-        EDID_EXTENSION_CTA_861_LEN
+        EDID_EXTENSION_LEN
     }
 }
 
