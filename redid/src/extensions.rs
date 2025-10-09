@@ -1,3 +1,4 @@
+use bon::Builder;
 use num_traits::ToPrimitive as _;
 #[cfg(feature = "serde")]
 use serde::{de, Deserialize, Deserializer};
@@ -1000,22 +1001,112 @@ impl IntoBytes for EdidExtensionCTA861 {
     }
 }
 
+/// Extension defined by monitor manufacturer.
+/// Listed with tag number 0xFF in the EDID 1.4 specification, table 2.7.
+///
+/// The content of this extension follows the general extension format:
+/// Byte 0: Extension tag number
+/// Byte 1: Revision number. Revisions are must be backward compatible
+/// Bytes 2 to 126: Vendor-specific data
+/// Byte 127: Checksum
+#[derive(Clone, Debug, Builder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+pub struct EdidExtensionManufacturer {
+    /// Revision number
+    revision: u8,
+    /// Vendor-specific data
+    #[builder(with = |vendor_data: Vec<u8>| -> Result<_, EdidTypeConversionError<usize>> {
+        const VENDOR_DATA_LEN: usize = EDID_EXTENSION_LEN - 3;
+
+        if vendor_data.len() <= VENDOR_DATA_LEN {
+            Ok(vendor_data)
+        } else {
+            Err(EdidTypeConversionError::Range(vendor_data.len(), Some(0), Some(VENDOR_DATA_LEN)))
+        }
+    })]
+    vendor_data: Vec<u8>,
+}
+
+impl IntoBytes for EdidExtensionManufacturer {
+    fn into_bytes(self) -> Vec<u8> {
+        const MANUFACTURER_EXTENSION_TAG: u8 = 0xFF;
+
+        let mut data: Vec<u8> = Vec::with_capacity(EDID_EXTENSION_LEN);
+        data.push(MANUFACTURER_EXTENSION_TAG);
+        data.push(self.revision);
+        data.extend_from_slice(&self.vendor_data);
+        data.resize(EDID_EXTENSION_LEN - 1, 0);
+        data.push(calculate_checksum(&data));
+
+        assert_eq!(
+            data.len(),
+            EDID_EXTENSION_LEN,
+            "EDID Manufacturer Extension is larger than it should ({} vs expected {} bytes)",
+            data.len(),
+            EDID_EXTENSION_LEN
+        );
+
+        data
+    }
+
+    fn size(&self) -> usize {
+        EDID_EXTENSION_LEN
+    }
+}
+
+#[cfg(test)]
+mod test_manufacturer_extension {
+    use super::*;
+
+    #[test]
+    fn test_manufacturer_extension_valid() {
+        let extension = EdidExtensionManufacturer::builder()
+            .revision(1)
+            .vendor_data(vec![0x00, 0x01, 0x02])
+            .expect("Vendor data should be valid")
+            .build();
+
+        let mut expected = vec![0xFF, 0x01, 0x00, 0x01, 0x02];
+        expected.resize(127, 0);
+        expected.push(0xFD);
+
+        assert_eq!(extension.size(), 128usize);
+        assert_eq!(extension.into_bytes(), expected);
+    }
+
+    #[test]
+    fn test_manufacturer_extension_too_long() {
+        let result = EdidExtensionManufacturer::builder()
+            .revision(0)
+            .vendor_data(vec![0xAA; 126]);
+
+        assert!(matches!(
+            result,
+            Err(EdidTypeConversionError::Range(126, Some(0), Some(125)))
+        ));
+    }
+}
+
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(Deserialize))]
 pub enum EdidExtension {
     CTA861(EdidExtensionCTA861),
+    Manufacturer(EdidExtensionManufacturer),
 }
 
 impl IntoBytes for EdidExtension {
     fn into_bytes(self) -> Vec<u8> {
         match self {
             EdidExtension::CTA861(v) => v.into_bytes(),
+            EdidExtension::Manufacturer(v) => v.into_bytes(),
         }
     }
 
     fn size(&self) -> usize {
         match self {
             EdidExtension::CTA861(v) => v.size(),
+            EdidExtension::Manufacturer(v) => v.size(),
         }
     }
 }

@@ -59,7 +59,7 @@ pub use extensions::{
     EdidExtensionCTA861Revision3DataBlock, EdidExtensionCTA861SpeakerAllocationDataBlock,
     EdidExtensionCTA861VideoCapabilityDataBlock, EdidExtensionCTA861VideoCapabilityQuantization,
     EdidExtensionCTA861VideoCapabilityScanBehavior, EdidExtensionCTA861VideoDataBlock,
-    EdidExtensionCTA861VideoDataBlockDesc,
+    EdidExtensionCTA861VideoDataBlockDesc, EdidExtensionManufacturer,
 };
 
 pub mod hdmi;
