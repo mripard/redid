@@ -36,6 +36,90 @@ pub(crate) trait EdidExtensionTagNumber {
     fn tag_number(&self) -> u8;
 }
 
+/// Block map extension.
+/// See EDID 1.4 specification section 2.2.3 for more details.
+///
+/// The content of this extension follows this format:
+/// Byte 0: Extension tag number
+/// Bytes 1 to 126: Block tag number for the data stored in blocks 2 to 127, for the first block map
+/// extension, or 129 to 254, for the second block map extension. Zeroes indicate unused blocks.
+/// Byte 127: Checksum
+#[derive(Clone, Debug, Builder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+pub(crate) struct EdidExtensionBlockMap {
+    #[builder(with = |blocks: Vec<u8>| -> Result<_, EdidTypeConversionError<usize>> {
+        const MAX_BLOCKS: usize = EDID_EXTENSION_LEN - 2;
+
+        if blocks.len() <= MAX_BLOCKS {
+            Ok(blocks)
+        } else {
+            Err(EdidTypeConversionError::Range(blocks.len(), Some(0), Some(MAX_BLOCKS)))
+        }
+    })]
+    blocks: Vec<u8>,
+}
+
+impl EdidExtensionTagNumber for EdidExtensionBlockMap {
+    fn tag_number(&self) -> u8 {
+        0xF0
+    }
+}
+
+impl IntoBytes for EdidExtensionBlockMap {
+    fn into_bytes(self) -> Vec<u8> {
+        let mut data: Vec<u8> = Vec::with_capacity(EDID_EXTENSION_LEN);
+        data.push(self.tag_number());
+        data.extend_from_slice(&self.blocks);
+        data.resize(EDID_EXTENSION_LEN - 1, 0);
+        data.push(calculate_checksum(&data));
+
+        assert_eq!(
+            data.len(),
+            EDID_EXTENSION_LEN,
+            "EDID Manufacturer Extension is larger than it should ({} vs expected {} bytes)",
+            data.len(),
+            EDID_EXTENSION_LEN
+        );
+
+        data
+    }
+
+    fn size(&self) -> usize {
+        EDID_EXTENSION_LEN
+    }
+}
+
+#[cfg(test)]
+mod test_block_map_extension {
+    use super::*;
+
+    #[test]
+    fn test_block_map_extension_valid() {
+        let extension = EdidExtensionBlockMap::builder()
+            .blocks(vec![0x02, 0x10, 0x40, 0x50, 0x60, 0xFF])
+            .expect("This number of blocks should be allowed")
+            .build();
+
+        let mut expected = vec![0xF0, 0x02, 0x10, 0x40, 0x50, 0x60, 0xFF];
+        expected.resize(127, 0);
+        expected.push(0x0F);
+
+        assert_eq!(extension.size(), 128usize);
+        assert_eq!(extension.into_bytes(), expected);
+    }
+
+    #[test]
+    fn test_block_map_extension_too_many_blocks() {
+        let result = EdidExtensionBlockMap::builder().blocks(vec![0xFF; 127]);
+
+        assert!(matches!(
+            result,
+            Err(EdidTypeConversionError::Range(127, Some(0), Some(126)))
+        ));
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "serde", derive(Deserialize))]
 #[cfg_attr(feature = "serde", serde(try_from = "u8"))]
