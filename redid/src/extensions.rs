@@ -3,6 +3,7 @@ use num_traits::ToPrimitive as _;
 use serde::{de, Deserialize, Deserializer};
 use typed_builder::TypedBuilder;
 
+use crate::util::calculate_checksum;
 use crate::{EdidDescriptorDetailedTiming, EdidTypeConversionError, IntoBytes};
 
 /// EDID extension block length.
@@ -961,13 +962,7 @@ impl IntoBytes for EdidExtensionCTA861Revision3 {
 
         data.resize(EDID_EXTENSION_LEN - 1, 0);
 
-        let mut sum: u8 = 0;
-        for byte in &data {
-            sum = sum.wrapping_add(*byte);
-        }
-
-        let checksum = 0u8.wrapping_sub(sum);
-        data.push(checksum);
+        data.push(calculate_checksum(&data));
 
         assert_eq!(
             data.len(),

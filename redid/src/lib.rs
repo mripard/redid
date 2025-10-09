@@ -64,6 +64,9 @@ pub use extensions::{
 
 pub mod hdmi;
 
+mod util;
+use crate::util::calculate_checksum;
+
 const EDID_BASE_LEN: usize = 128;
 
 // It looks like const_assert! doesn't count as being used somehow.
@@ -1933,13 +1936,7 @@ impl IntoBytes for Edid {
             .expect("Number of extensions would overflow our type.");
         bytes.push(num_exts);
 
-        let mut sum: u8 = 0;
-        for byte in &bytes {
-            sum = sum.wrapping_add(*byte);
-        }
-
-        let checksum = 0u8.wrapping_sub(sum);
-        bytes.push(checksum);
+        bytes.push(calculate_checksum(&bytes));
 
         for ext in self.extensions {
             bytes.extend_from_slice(&ext.into_bytes());
