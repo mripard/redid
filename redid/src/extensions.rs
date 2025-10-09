@@ -29,6 +29,12 @@ const EDID_EXTENSION_CTA_861_COLORIMETRY_LEN: usize =
 const EDID_EXTENSION_CTA_861_HDMI_HEADER_LEN: usize = EDID_EXTENSION_CTA_861_VENDOR_HEADER_LEN + 2;
 const EDID_EXTENSION_CTA_861_HDMI_VIDEO_HEADER_LEN: usize = 2;
 
+/// Trait for getting the tag number of an extension.
+/// Tag numbers are defined in the EDID 1.4 specification, table 2.7.
+pub(crate) trait EdidExtensionTagNumber {
+    fn tag_number(&self) -> u8;
+}
+
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "serde", derive(Deserialize))]
 #[cfg_attr(feature = "serde", serde(try_from = "u8"))]
@@ -915,11 +921,17 @@ pub struct EdidExtensionCTA861Revision3 {
     timings: Vec<EdidDescriptorDetailedTiming>,
 }
 
+impl EdidExtensionTagNumber for EdidExtensionCTA861Revision3 {
+    fn tag_number(&self) -> u8 {
+        0x02
+    }
+}
+
 impl IntoBytes for EdidExtensionCTA861Revision3 {
     fn into_bytes(self) -> Vec<u8> {
         let mut data: Vec<u8> = Vec::with_capacity(EDID_EXTENSION_LEN);
-
-        data.extend_from_slice(&[0x02, 0x03]);
+        data.push(self.tag_number());
+        data.push(0x03);
 
         let dtd_offset = if self.data_blocks.is_empty() && self.timings.is_empty() {
             0
@@ -986,6 +998,14 @@ pub enum EdidExtensionCTA861 {
     Revision3(EdidExtensionCTA861Revision3),
 }
 
+impl EdidExtensionTagNumber for EdidExtensionCTA861 {
+    fn tag_number(&self) -> u8 {
+        match self {
+            EdidExtensionCTA861::Revision3(e) => e.tag_number(),
+        }
+    }
+}
+
 impl IntoBytes for EdidExtensionCTA861 {
     fn into_bytes(self) -> Vec<u8> {
         match self {
@@ -1018,9 +1038,14 @@ pub struct EdidExtensionManufacturer {
     vendor_data: Vec<u8>,
 }
 
+impl EdidExtensionTagNumber for EdidExtensionManufacturer {
+    fn tag_number(&self) -> u8 {
+        0xFF
+    }
+}
+
 impl IntoBytes for EdidExtensionManufacturer {
     fn into_bytes(self) -> Vec<u8> {
-        const MANUFACTURER_EXTENSION_TAG: u8 = 0xFF;
         const VENDOR_DATA_LEN: usize = EDID_EXTENSION_LEN - 3;
 
         assert!(
@@ -1031,7 +1056,7 @@ impl IntoBytes for EdidExtensionManufacturer {
         );
 
         let mut data: Vec<u8> = Vec::with_capacity(EDID_EXTENSION_LEN);
-        data.push(MANUFACTURER_EXTENSION_TAG);
+        data.push(self.tag_number());
         data.push(self.revision);
         data.extend_from_slice(&self.vendor_data);
         data.resize(EDID_EXTENSION_LEN - 1, 0);
@@ -1088,6 +1113,15 @@ mod test_manufacturer_extension {
 pub enum EdidExtension {
     CTA861(EdidExtensionCTA861),
     Manufacturer(EdidExtensionManufacturer),
+}
+
+impl EdidExtensionTagNumber for EdidExtension {
+    fn tag_number(&self) -> u8 {
+        match self {
+            EdidExtension::CTA861(e) => e.tag_number(),
+            EdidExtension::Manufacturer(e) => e.tag_number(),
+        }
+    }
 }
 
 impl IntoBytes for EdidExtension {
