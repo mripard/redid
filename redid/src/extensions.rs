@@ -35,6 +35,102 @@ pub(crate) trait EdidExtensionTagNumber {
     fn tag_number(&self) -> u8;
 }
 
+/// Block map extension.
+/// See EDID 1.4 specification section 2.2.3 for more details.
+///
+/// The content of this extension follows this format:
+/// Byte 0: Extension tag number
+/// Bytes 1 to 126: Block tag number for the data stored in blocks 2 to 127, for the first block map
+/// extension, or 129 to 254, for the second block map extension. Zeroes indicate unused blocks.
+/// Byte 127: Checksum
+#[derive(Clone, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[builder(mutators(
+    #[allow(unreachable_pub)]
+    pub fn blocks(&mut self, blocks: Vec<u8>) {
+        self.blocks = blocks;
+    }
+
+    #[allow(unreachable_pub)]
+    pub fn add_block(&mut self, block: u8) {
+        self.blocks.push(block);
+    }
+))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+pub struct EdidExtensionBlockMap {
+    #[builder(via_mutators)]
+    blocks: Vec<u8>,
+}
+
+impl EdidExtensionTagNumber for EdidExtensionBlockMap {
+    fn tag_number(&self) -> u8 {
+        0xF0
+    }
+}
+
+impl IntoBytes for EdidExtensionBlockMap {
+    fn into_bytes(self) -> Vec<u8> {
+        const MAX_BLOCKS: usize = EDID_EXTENSION_LEN - 2;
+
+        assert!(
+            self.blocks.len() <= MAX_BLOCKS,
+            "Too many blocks in block map extension ({} vs maximum expected {})",
+            self.blocks.len(),
+            MAX_BLOCKS
+        );
+
+        let mut data: Vec<u8> = Vec::with_capacity(EDID_EXTENSION_LEN);
+        data.push(self.tag_number());
+        data.extend_from_slice(&self.blocks);
+        data.resize(EDID_EXTENSION_LEN - 1, 0);
+        data.push(calculate_checksum(&data));
+
+        assert_eq!(
+            data.len(),
+            EDID_EXTENSION_LEN,
+            "EDID Manufacturer Extension is larger than it should ({} vs expected {} bytes)",
+            data.len(),
+            EDID_EXTENSION_LEN
+        );
+
+        data
+    }
+
+    fn size(&self) -> usize {
+        EDID_EXTENSION_LEN
+    }
+}
+
+#[cfg(test)]
+mod test_block_map_extension {
+    use super::*;
+
+    #[test]
+    fn test_block_map_extension_valid() {
+        let extension = EdidExtensionBlockMap::builder()
+            .blocks(vec![0x02, 0x10, 0x40, 0x50, 0x60, 0xFF])
+            .build();
+
+        let mut expected = vec![0xF0, 0x02, 0x10, 0x40, 0x50, 0x60, 0xFF];
+        expected.resize(127, 0);
+        expected.push(0x0F);
+
+        assert_eq!(extension.size(), 128usize);
+        assert_eq!(extension.into_bytes(), expected);
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "Too many blocks in block map extension (127 vs maximum expected 126)"
+    )]
+    fn test_block_map_extension_too_many_blocks() {
+        EdidExtensionBlockMap::builder()
+            .blocks(vec![0xFF; 127])
+            .build()
+            .into_bytes();
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "serde", derive(Deserialize))]
 #[cfg_attr(feature = "serde", serde(try_from = "u8"))]
@@ -1111,6 +1207,7 @@ mod test_manufacturer_extension {
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(Deserialize))]
 pub enum EdidExtension {
+    BlockMap(EdidExtensionBlockMap),
     CTA861(EdidExtensionCTA861),
     Manufacturer(EdidExtensionManufacturer),
 }
@@ -1118,6 +1215,7 @@ pub enum EdidExtension {
 impl EdidExtensionTagNumber for EdidExtension {
     fn tag_number(&self) -> u8 {
         match self {
+            EdidExtension::BlockMap(e) => e.tag_number(),
             EdidExtension::CTA861(e) => e.tag_number(),
             EdidExtension::Manufacturer(e) => e.tag_number(),
         }
@@ -1127,6 +1225,7 @@ impl EdidExtensionTagNumber for EdidExtension {
 impl IntoBytes for EdidExtension {
     fn into_bytes(self) -> Vec<u8> {
         match self {
+            EdidExtension::BlockMap(v) => v.into_bytes(),
             EdidExtension::CTA861(v) => v.into_bytes(),
             EdidExtension::Manufacturer(v) => v.into_bytes(),
         }
@@ -1134,6 +1233,7 @@ impl IntoBytes for EdidExtension {
 
     fn size(&self) -> usize {
         match self {
+            EdidExtension::BlockMap(v) => v.size(),
             EdidExtension::CTA861(v) => v.size(),
             EdidExtension::Manufacturer(v) => v.size(),
         }
