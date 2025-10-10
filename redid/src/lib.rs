@@ -49,6 +49,7 @@ pub use descriptors::{
 
 mod extensions;
 
+use crate::extensions::EdidExtensionBlockMap;
 pub use extensions::{
     CecAddress, EdidExtension, EdidExtensionCTA861, EdidExtensionCTA861AudioDataBlock,
     EdidExtensionCTA861AudioDataBlockChannels, EdidExtensionCTA861AudioDataBlockDesc,
@@ -1900,6 +1901,62 @@ struct Edid {
     extensions: Vec<EdidExtension>,
 }
 
+impl Edid {
+    /// Helper method to convert the extensions into bytes
+    /// As defined in the EDID 1.4 specification, section 2.2.3, block map extensions are optional
+    /// in EDID 1.4 but required in EDID 1.3. For the shake of simplicity, we always add them.
+    fn extensions_into_bytes(extensions: Vec<EdidExtension>) -> Vec<u8> {
+        let n_data_blocks = match extensions.len() {
+            0..=1 => 0,
+            2..=126 => 1,
+            127..=252 => 2,
+            _ => panic!(
+                "Too many extensions ({} vs maximum expected 252)",
+                extensions.len()
+            ),
+        };
+
+        let mut bytes =
+            Vec::with_capacity(extensions.len() * EDID_BASE_LEN + n_data_blocks * EDID_BASE_LEN);
+
+        // Collect the blocks for the block map extensions before `extensions` is moved
+        let block_map1_blocks = extensions
+            .iter()
+            .take(126)
+            .map(extensions::EdidExtensionTagNumber::tag_number)
+            .collect::<Vec<u8>>();
+
+        let block_map2_blocks = extensions
+            .iter()
+            .skip(126)
+            .map(extensions::EdidExtensionTagNumber::tag_number)
+            .collect::<Vec<u8>>();
+
+        for ext in extensions {
+            bytes.extend_from_slice(&ext.into_bytes());
+        }
+
+        // The first block map extension is always the first extension block
+        if n_data_blocks >= 1 {
+            let block_map1 = EdidExtensionBlockMap::builder()
+                .blocks(block_map1_blocks)
+                .build();
+            bytes.splice(0..0, block_map1.into_bytes());
+        }
+
+        // The second block map extension is always at index 127
+        if n_data_blocks == 2 {
+            const BLOCK_MAP2_INDEX: usize = 128 * 127;
+            let block_map2 = EdidExtensionBlockMap::builder()
+                .blocks(block_map2_blocks)
+                .build();
+            bytes.splice(BLOCK_MAP2_INDEX..BLOCK_MAP2_INDEX, block_map2.into_bytes());
+        }
+
+        bytes
+    }
+}
+
 impl IntoBytes for Edid {
     fn into_bytes(self) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(0x80);
@@ -1938,9 +1995,7 @@ impl IntoBytes for Edid {
 
         bytes.push(calculate_checksum(&bytes));
 
-        for ext in self.extensions {
-            bytes.extend_from_slice(&ext.into_bytes());
-        }
+        bytes.extend_from_slice(&Self::extensions_into_bytes(self.extensions));
 
         assert_eq!(
             bytes.len() % EDID_BASE_LEN,
@@ -2014,6 +2069,138 @@ impl From<EdidRelease4> for Edid {
             descriptors,
             extensions: value.extensions,
         }
+    }
+}
+
+#[cfg(test)]
+mod test_edid {
+    use super::*;
+
+    // Auxiliary function to generate the requested number of manufacturer extensions
+    fn generate_extensions(num_extensions: usize) -> Vec<u8> {
+        let mut extensions = Vec::with_capacity(num_extensions);
+        for _ in 0..num_extensions {
+            extensions.push(EdidExtension::Manufacturer(
+                EdidExtensionManufacturer::builder()
+                    .revision(1)
+                    .vendor_data(vec![0x00, 0x01, 0x02])
+                    .build(),
+            ));
+        }
+        Edid::extensions_into_bytes(extensions)
+    }
+
+    #[test]
+    fn test_extensions_into_bytes_without_extensions() {
+        let extensions = vec![];
+        let bytes = Edid::extensions_into_bytes(extensions);
+        assert_eq!(bytes, vec![]);
+    }
+
+    #[test]
+    fn test_extensions_into_bytes_with_1_extension() {
+        let extension = EdidExtension::Manufacturer(
+            EdidExtensionManufacturer::builder()
+                .revision(1)
+                .vendor_data(vec![0x00, 0x01, 0x02])
+                .build(),
+        );
+        let extensions: Vec<EdidExtension> = vec![extension];
+        let bytes = Edid::extensions_into_bytes(extensions);
+
+        // With 1 extension, a data block map extension not is added
+        let mut expected = vec![0xFF, 0x01, 0x00, 0x01, 0x02];
+        expected.resize(127, 0);
+        expected.push(0xFD);
+
+        assert_eq!(bytes.len(), 128);
+        assert_eq!(bytes, expected);
+    }
+
+    #[test]
+    fn test_extensions_into_bytes_with_2_extension() {
+        const NUM_EXTENSIONS: usize = 2;
+        let bytes = generate_extensions(NUM_EXTENSIONS);
+
+        // With 2 extensions, a block map extension is added
+        let mut expected = Vec::with_capacity(128 + 128 * NUM_EXTENSIONS);
+
+        // First block map extension
+        expected.extend_from_slice(&[0xF0, 0xFF, 0xFF]);
+        expected.resize(expected.len() + 124, 0);
+        expected.push(0x12);
+
+        for _ in 0..NUM_EXTENSIONS {
+            expected.extend_from_slice(&[0xFF, 0x01, 0x00, 0x01, 0x02]);
+            expected.resize(expected.len() + 122, 0);
+            expected.push(0xFD);
+        }
+
+        assert_eq!(bytes.len(), 128 + 128 * NUM_EXTENSIONS);
+        assert_eq!(bytes, expected);
+    }
+
+    #[test]
+    fn test_extensions_into_bytes_with_126_extension() {
+        const NUM_EXTENSIONS: usize = 126;
+        let bytes = generate_extensions(NUM_EXTENSIONS);
+
+        // With 126 extensions, a block map extension is added
+        let mut expected = Vec::with_capacity(128 + 128 * NUM_EXTENSIONS);
+
+        // First block map extension
+        expected.push(0xF0);
+        expected.resize(expected.len() + 126, 0xFF);
+        expected.push(0x8E);
+
+        for _ in 0..NUM_EXTENSIONS {
+            expected.extend_from_slice(&[0xFF, 0x01, 0x00, 0x01, 0x02]);
+            expected.resize(expected.len() + 122, 0);
+            expected.push(0xFD);
+        }
+
+        assert_eq!(bytes.len(), 128 + 128 * NUM_EXTENSIONS);
+        assert_eq!(bytes, expected);
+    }
+
+    #[test]
+    fn test_extensions_into_bytes_with_127_extension() {
+        const NUM_EXTENSIONS: usize = 127;
+        let bytes = generate_extensions(NUM_EXTENSIONS);
+
+        // With 127 extensions, 2 block map extension are added
+        let mut expected = Vec::with_capacity(128 * 2 + 128 * NUM_EXTENSIONS);
+
+        // First block map extension
+        expected.push(0xF0);
+        expected.resize(expected.len() + 126, 0xFF);
+        expected.push(0x8E);
+
+        // Followed by 126 extensions
+        for _ in 0..126 {
+            expected.extend_from_slice(&[0xFF, 0x01, 0x00, 0x01, 0x02]);
+            expected.resize(expected.len() + 122, 0);
+            expected.push(0xFD);
+        }
+
+        // Second block map extension
+        expected.extend_from_slice(&[0xF0, 0xFF]);
+        expected.resize(expected.len() + 125, 0);
+        expected.push(0x11);
+
+        // Followed by the remaining extension
+        expected.extend_from_slice(&[0xFF, 0x01, 0x00, 0x01, 0x02]);
+        expected.resize(expected.len() + 122, 0);
+        expected.push(0xFD);
+
+        assert_eq!(bytes.len(), 128 * 2 + 128 * NUM_EXTENSIONS);
+        assert_eq!(bytes, expected);
+    }
+
+    #[test]
+    #[should_panic(expected = "Too many extensions (253 vs maximum expected 252)")]
+    fn test_extensions_into_bytes_with_253_extension() {
+        generate_extensions(253);
     }
 }
 
