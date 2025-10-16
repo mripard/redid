@@ -90,11 +90,15 @@ impl TryFrom<Vec<u8>> for EdidDescriptorCustomPayload {
     }
 }
 
+/// Descriptor defined by manufacturer.
+/// Defined in EDID 1.4 Specification, Section 3.10.3.12.
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(Deserialize))]
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct EdidDescriptorCustom {
+    /// Data tag numbers from 0x00 to 0x0F
     tag: EdidDescriptorCustomTag,
+    /// Vendor-specific data
     payload: EdidDescriptorCustomPayload,
 }
 
@@ -1536,7 +1540,7 @@ impl IntoBytes for EdidR4Descriptor {
 
 #[cfg(test)]
 mod tests {
-    use crate::{EdidR4Descriptor, IntoBytes};
+    use crate::{EdidDescriptorCustom, EdidR4Descriptor, IntoBytes};
 
     #[test]
     fn test_descriptor_product_name_spec() {
@@ -1570,6 +1574,48 @@ mod tests {
                 0x00, 0x00, 0x00, 0xff, 0x00, 0x41, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37,
                 0x38, 0x39, 0x0A, 0x20,
             ]
+        );
+    }
+
+    #[test]
+    fn test_descriptor_custom_valid() {
+        let tag: u8 = 0x00;
+        let payload: Vec<u8> = vec![0xED, 0xD1, 0xD0, 0x00];
+
+        assert_eq!(
+            EdidR4Descriptor::Custom((tag, payload).try_into().unwrap()).into_bytes(),
+            [
+                0x00, 0x00, 0x00, 0x00, 0x00, 0xED, 0xD1, 0xD0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00,
+            ]
+        );
+    }
+
+    #[test]
+    fn test_descriptor_custom_invalid_tag() {
+        let tag: u8 = 0x10;
+        let payload: Vec<u8> = vec![0xC0, 0xFF, 0xEE];
+
+        assert_eq!(
+            EdidDescriptorCustom::try_from((tag, payload))
+                .expect_err("Should fail")
+                .to_string(),
+            "Value out of range: 16 (Range: 0..=15)"
+        );
+    }
+
+    #[test]
+    fn test_descriptor_custom_payload_too_long() {
+        let tag: u8 = 0x01;
+        let payload: Vec<u8> = vec![
+            0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E,
+        ];
+
+        assert_eq!(
+            EdidDescriptorCustom::try_from((tag, payload))
+                .expect_err("Should fail")
+                .to_string(),
+            "Invalid Value: Custom Descriptor Payload must be at most 13 bytes long."
         );
     }
 }
