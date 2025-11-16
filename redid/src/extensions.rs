@@ -1,11 +1,15 @@
+use bon::Builder;
 use num_traits::ToPrimitive as _;
 #[cfg(feature = "serde")]
 use serde::{de, Deserialize, Deserializer};
 use typed_builder::TypedBuilder;
 
+use crate::util::calculate_checksum;
 use crate::{EdidDescriptorDetailedTiming, EdidTypeConversionError, IntoBytes};
 
-const EDID_EXTENSION_CTA_861_LEN: usize = 128;
+/// EDID extension block length.
+/// Defined in EDID 1.4 Specification, Section 2.2.
+const EDID_EXTENSION_LEN: usize = 128;
 
 const EDID_EXTENSION_CTA_861_DATA_BLOCK_HEADER_LEN: usize = 1;
 const EDID_EXTENSION_CTA_861_AUDIO_DESCRIPTOR_LEN: usize = 3;
@@ -25,6 +29,96 @@ const EDID_EXTENSION_CTA_861_COLORIMETRY_LEN: usize =
 
 const EDID_EXTENSION_CTA_861_HDMI_HEADER_LEN: usize = EDID_EXTENSION_CTA_861_VENDOR_HEADER_LEN + 2;
 const EDID_EXTENSION_CTA_861_HDMI_VIDEO_HEADER_LEN: usize = 2;
+
+/// Trait for getting the tag number of an extension.
+/// Tag numbers are defined in the EDID 1.4 specification, table 2.7.
+pub(crate) trait EdidExtensionTagNumber {
+    fn tag_number(&self) -> u8;
+}
+
+/// Block map extension.
+/// See EDID 1.4 specification section 2.2.3 for more details.
+///
+/// The content of this extension follows this format:
+/// Byte 0: Extension tag number
+/// Bytes 1 to 126: Block tag number for the data stored in blocks 2 to 127, for the first block map
+/// extension, or 129 to 254, for the second block map extension. Zeroes indicate unused blocks.
+/// Byte 127: Checksum
+#[derive(Clone, Debug, Builder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+pub(crate) struct EdidExtensionBlockMap {
+    #[builder(with = |blocks: Vec<u8>| -> Result<_, EdidTypeConversionError<usize>> {
+        const MAX_BLOCKS: usize = EDID_EXTENSION_LEN - 2;
+
+        if blocks.len() <= MAX_BLOCKS {
+            Ok(blocks)
+        } else {
+            Err(EdidTypeConversionError::Range(blocks.len(), Some(0), Some(MAX_BLOCKS)))
+        }
+    })]
+    blocks: Vec<u8>,
+}
+
+impl EdidExtensionTagNumber for EdidExtensionBlockMap {
+    fn tag_number(&self) -> u8 {
+        0xF0
+    }
+}
+
+impl IntoBytes for EdidExtensionBlockMap {
+    fn into_bytes(self) -> Vec<u8> {
+        let mut data: Vec<u8> = Vec::with_capacity(EDID_EXTENSION_LEN);
+        data.push(self.tag_number());
+        data.extend_from_slice(&self.blocks);
+        data.resize(EDID_EXTENSION_LEN - 1, 0);
+        data.push(calculate_checksum(&data));
+
+        assert_eq!(
+            data.len(),
+            EDID_EXTENSION_LEN,
+            "EDID Manufacturer Extension is larger than it should ({} vs expected {} bytes)",
+            data.len(),
+            EDID_EXTENSION_LEN
+        );
+
+        data
+    }
+
+    fn size(&self) -> usize {
+        EDID_EXTENSION_LEN
+    }
+}
+
+#[cfg(test)]
+mod test_block_map_extension {
+    use super::*;
+
+    #[test]
+    fn test_block_map_extension_valid() {
+        let extension = EdidExtensionBlockMap::builder()
+            .blocks(vec![0x02, 0x10, 0x40, 0x50, 0x60, 0xFF])
+            .expect("This number of blocks should be allowed")
+            .build();
+
+        let mut expected = vec![0xF0, 0x02, 0x10, 0x40, 0x50, 0x60, 0xFF];
+        expected.resize(127, 0);
+        expected.push(0x0F);
+
+        assert_eq!(extension.size(), 128usize);
+        assert_eq!(extension.into_bytes(), expected);
+    }
+
+    #[test]
+    fn test_block_map_extension_too_many_blocks() {
+        let result = EdidExtensionBlockMap::builder().blocks(vec![0xFF; 127]);
+
+        assert!(matches!(
+            result,
+            Err(EdidTypeConversionError::Range(127, Some(0), Some(126)))
+        ));
+    }
+}
 
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "serde", derive(Deserialize))]
@@ -912,11 +1006,17 @@ pub struct EdidExtensionCTA861Revision3 {
     timings: Vec<EdidDescriptorDetailedTiming>,
 }
 
+impl EdidExtensionTagNumber for EdidExtensionCTA861Revision3 {
+    fn tag_number(&self) -> u8 {
+        0x02
+    }
+}
+
 impl IntoBytes for EdidExtensionCTA861Revision3 {
     fn into_bytes(self) -> Vec<u8> {
-        let mut data: Vec<u8> = Vec::with_capacity(EDID_EXTENSION_CTA_861_LEN);
-
-        data.extend_from_slice(&[0x02, 0x03]);
+        let mut data: Vec<u8> = Vec::with_capacity(EDID_EXTENSION_LEN);
+        data.push(self.tag_number());
+        data.push(0x03);
 
         let dtd_offset = if self.data_blocks.is_empty() && self.timings.is_empty() {
             0
@@ -957,29 +1057,23 @@ impl IntoBytes for EdidExtensionCTA861Revision3 {
             data.extend_from_slice(&timing.into_bytes());
         }
 
-        data.resize(EDID_EXTENSION_CTA_861_LEN - 1, 0);
+        data.resize(EDID_EXTENSION_LEN - 1, 0);
 
-        let mut sum: u8 = 0;
-        for byte in &data {
-            sum = sum.wrapping_add(*byte);
-        }
-
-        let checksum = 0u8.wrapping_sub(sum);
-        data.push(checksum);
+        data.push(calculate_checksum(&data));
 
         assert_eq!(
             data.len(),
-            EDID_EXTENSION_CTA_861_LEN,
+            EDID_EXTENSION_LEN,
             "EDID CTA-861 Extension is larger than it should ({} vs expected {} bytes)",
             data.len(),
-            EDID_EXTENSION_CTA_861_LEN
+            EDID_EXTENSION_LEN
         );
 
         data
     }
 
     fn size(&self) -> usize {
-        EDID_EXTENSION_CTA_861_LEN
+        EDID_EXTENSION_LEN
     }
 }
 
@@ -987,6 +1081,14 @@ impl IntoBytes for EdidExtensionCTA861Revision3 {
 #[cfg_attr(feature = "serde", derive(Deserialize))]
 pub enum EdidExtensionCTA861 {
     Revision3(EdidExtensionCTA861Revision3),
+}
+
+impl EdidExtensionTagNumber for EdidExtensionCTA861 {
+    fn tag_number(&self) -> u8 {
+        match self {
+            EdidExtensionCTA861::Revision3(e) => e.tag_number(),
+        }
+    }
 }
 
 impl IntoBytes for EdidExtensionCTA861 {
@@ -1003,22 +1105,125 @@ impl IntoBytes for EdidExtensionCTA861 {
     }
 }
 
+/// Extension defined by monitor manufacturer.
+/// Listed with tag number 0xFF in the EDID 1.4 specification, table 2.7.
+///
+/// The content of this extension follows the general extension format:
+/// Byte 0: Extension tag number
+/// Byte 1: Revision number. Revisions are must be backward compatible
+/// Bytes 2 to 126: Vendor-specific data
+/// Byte 127: Checksum
+#[derive(Clone, Debug, Builder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+pub struct EdidExtensionManufacturer {
+    /// Revision number
+    revision: u8,
+    /// Vendor-specific data
+    #[builder(with = |vendor_data: Vec<u8>| -> Result<_, EdidTypeConversionError<usize>> {
+        const VENDOR_DATA_LEN: usize = EDID_EXTENSION_LEN - 3;
+
+        if vendor_data.len() <= VENDOR_DATA_LEN {
+            Ok(vendor_data)
+        } else {
+            Err(EdidTypeConversionError::Range(vendor_data.len(), Some(0), Some(VENDOR_DATA_LEN)))
+        }
+    })]
+    vendor_data: Vec<u8>,
+}
+
+impl EdidExtensionTagNumber for EdidExtensionManufacturer {
+    fn tag_number(&self) -> u8 {
+        0xFF
+    }
+}
+
+impl IntoBytes for EdidExtensionManufacturer {
+    fn into_bytes(self) -> Vec<u8> {
+        let mut data: Vec<u8> = Vec::with_capacity(EDID_EXTENSION_LEN);
+        data.push(self.tag_number());
+        data.push(self.revision);
+        data.extend_from_slice(&self.vendor_data);
+        data.resize(EDID_EXTENSION_LEN - 1, 0);
+        data.push(calculate_checksum(&data));
+
+        assert_eq!(
+            data.len(),
+            EDID_EXTENSION_LEN,
+            "EDID Manufacturer Extension is larger than it should ({} vs expected {} bytes)",
+            data.len(),
+            EDID_EXTENSION_LEN
+        );
+
+        data
+    }
+
+    fn size(&self) -> usize {
+        EDID_EXTENSION_LEN
+    }
+}
+
+#[cfg(test)]
+mod test_manufacturer_extension {
+    use super::*;
+
+    #[test]
+    fn test_manufacturer_extension_valid() {
+        let extension = EdidExtensionManufacturer::builder()
+            .revision(1)
+            .vendor_data(vec![0x00, 0x01, 0x02])
+            .expect("Vendor data should be valid")
+            .build();
+
+        let mut expected = vec![0xFF, 0x01, 0x00, 0x01, 0x02];
+        expected.resize(127, 0);
+        expected.push(0xFD);
+
+        assert_eq!(extension.size(), 128usize);
+        assert_eq!(extension.into_bytes(), expected);
+    }
+
+    #[test]
+    fn test_manufacturer_extension_too_long() {
+        let result = EdidExtensionManufacturer::builder()
+            .revision(0)
+            .vendor_data(vec![0xAA; 126]);
+
+        assert!(matches!(
+            result,
+            Err(EdidTypeConversionError::Range(126, Some(0), Some(125)))
+        ));
+    }
+}
+
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(Deserialize))]
 pub enum EdidExtension {
     CTA861(EdidExtensionCTA861),
+    Manufacturer(EdidExtensionManufacturer),
+}
+
+impl EdidExtensionTagNumber for EdidExtension {
+    fn tag_number(&self) -> u8 {
+        match self {
+            EdidExtension::CTA861(e) => e.tag_number(),
+            EdidExtension::Manufacturer(e) => e.tag_number(),
+        }
+    }
 }
 
 impl IntoBytes for EdidExtension {
     fn into_bytes(self) -> Vec<u8> {
         match self {
             EdidExtension::CTA861(v) => v.into_bytes(),
+            EdidExtension::Manufacturer(v) => v.into_bytes(),
         }
     }
 
     fn size(&self) -> usize {
         match self {
             EdidExtension::CTA861(v) => v.size(),
+            EdidExtension::Manufacturer(v) => v.size(),
         }
     }
 }
