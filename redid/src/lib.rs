@@ -55,11 +55,12 @@ pub use extensions::{
     EdidExtensionCTA861AudioDataBlockLPCM, EdidExtensionCTA861AudioDataBlockSamplingFrequency,
     EdidExtensionCTA861AudioDataBlockSamplingRate, EdidExtensionCTA861ColorimetryDataBlock,
     EdidExtensionCTA861Hdmi14bDataBlockVideo, EdidExtensionCTA861Hdmi14bTmdsRate,
-    EdidExtensionCTA861HdmiDataBlock, EdidExtensionCTA861Revision3,
-    EdidExtensionCTA861Revision3DataBlock, EdidExtensionCTA861SpeakerAllocationDataBlock,
-    EdidExtensionCTA861VideoCapabilityDataBlock, EdidExtensionCTA861VideoCapabilityQuantization,
-    EdidExtensionCTA861VideoCapabilityScanBehavior, EdidExtensionCTA861VideoDataBlock,
-    EdidExtensionCTA861VideoDataBlockDesc,
+    EdidExtensionCTA861HdmiDataBlock, EdidExtensionCTA861HdrStaticMetadataDataBlock,
+    EdidExtensionCTA861HdrStaticMetadataDescriptor, EdidExtensionCTA861HdrStaticMetadataLuminance,
+    EdidExtensionCTA861Revision3, EdidExtensionCTA861Revision3DataBlock,
+    EdidExtensionCTA861SpeakerAllocationDataBlock, EdidExtensionCTA861VideoCapabilityDataBlock,
+    EdidExtensionCTA861VideoCapabilityQuantization, EdidExtensionCTA861VideoCapabilityScanBehavior,
+    EdidExtensionCTA861VideoDataBlock, EdidExtensionCTA861VideoDataBlockDesc,
 };
 
 pub mod hdmi;

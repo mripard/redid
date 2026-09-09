@@ -26,6 +26,9 @@ const EDID_EXTENSION_CTA_861_COLORIMETRY_LEN: usize =
 const EDID_EXTENSION_CTA_861_HDMI_HEADER_LEN: usize = EDID_EXTENSION_CTA_861_VENDOR_HEADER_LEN + 2;
 const EDID_EXTENSION_CTA_861_HDMI_VIDEO_HEADER_LEN: usize = 2;
 
+const EDID_EXTENSION_CTA_861_HDR_STATIC_METADATA_HEADER_LEN: usize =
+    EDID_EXTENSION_CTA_861_DATA_BLOCK_EXTENDED_HEADER_LEN + 2;
+
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "serde", derive(Deserialize))]
 #[cfg_attr(feature = "serde", serde(try_from = "u8"))]
@@ -823,6 +826,212 @@ impl IntoBytes for EdidExtensionCTA861VideoCapabilityDataBlock {
     }
 }
 
+/// Static metadata descriptor types advertised by CTA-861-G, Section 7.5.13.
+#[repr(u8)]
+#[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+pub enum EdidExtensionCTA861HdrStaticMetadataDescriptor {
+    /// Static Metadata Type 1 (CTA-861-G, Section 6.9.1, Table 45).
+    Type1 = 0,
+}
+
+/// Desired content luminance code values from CTA-861-G, Section 7.5.13.
+#[derive(Clone, Copy, Debug, Default)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    serde(rename_all = "snake_case", deny_unknown_fields)
+)]
+pub enum EdidExtensionCTA861HdrStaticMetadataLuminance {
+    #[default]
+    None,
+    Max {
+        max_luminance: u8,
+    },
+    MaxAvg {
+        max_luminance: u8,
+        max_avg_luminance: u8,
+    },
+    MinMaxAvg {
+        max_luminance: u8,
+        max_avg_luminance: u8,
+        min_luminance: u8,
+    },
+}
+
+impl EdidExtensionCTA861HdrStaticMetadataLuminance {
+    fn append_to(self, data: &mut Vec<u8>) {
+        match self {
+            Self::None => {}
+            Self::Max { max_luminance } => data.push(max_luminance),
+            Self::MaxAvg {
+                max_luminance,
+                max_avg_luminance,
+            } => data.extend_from_slice(&[max_luminance, max_avg_luminance]),
+            Self::MinMaxAvg {
+                max_luminance,
+                max_avg_luminance,
+                min_luminance,
+            } => data.extend_from_slice(&[max_luminance, max_avg_luminance, min_luminance]),
+        }
+    }
+
+    fn size(self) -> usize {
+        match self {
+            Self::None => 0,
+            Self::Max { .. } => 1,
+            Self::MaxAvg { .. } => 2,
+            Self::MinMaxAvg { .. } => 3,
+        }
+    }
+}
+
+/// HDR Static Metadata Data Block from CTA-861-G, Section 7.5.13.
+#[derive(Clone, Copy, Debug, TypedBuilder)]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+pub struct EdidExtensionCTA861HdrStaticMetadataDataBlock {
+    #[builder(default)]
+    #[cfg_attr(feature = "serde", serde(default))]
+    traditional_gamma_sdr: bool,
+
+    #[builder(default)]
+    #[cfg_attr(feature = "serde", serde(default))]
+    traditional_gamma_hdr: bool,
+
+    #[builder(default)]
+    #[cfg_attr(feature = "serde", serde(default))]
+    smpte_st2084: bool,
+
+    #[builder(default)]
+    #[cfg_attr(feature = "serde", serde(default))]
+    bt_2100_hlg: bool,
+
+    #[builder(default, setter(strip_option))]
+    #[cfg_attr(feature = "serde", serde(default))]
+    static_metadata_descriptor: Option<EdidExtensionCTA861HdrStaticMetadataDescriptor>,
+
+    #[builder(default)]
+    #[cfg_attr(feature = "serde", serde(default))]
+    luminance: EdidExtensionCTA861HdrStaticMetadataLuminance,
+}
+
+impl IntoBytes for EdidExtensionCTA861HdrStaticMetadataDataBlock {
+    fn into_bytes(self) -> Vec<u8> {
+        let mut data = Vec::with_capacity(self.size());
+
+        let size = (self.size() - 1)
+            .to_u8()
+            .expect("Size would overflow our type");
+
+        data.push(7 << 5 | size);
+        data.push(6);
+
+        // EOTF support bits
+        let mut byte = 0;
+        if self.traditional_gamma_sdr {
+            byte |= 1 << 0;
+        }
+        if self.traditional_gamma_hdr {
+            byte |= 1 << 1;
+        }
+        if self.smpte_st2084 {
+            byte |= 1 << 2;
+        }
+        if self.bt_2100_hlg {
+            byte |= 1 << 3;
+        }
+        data.push(byte);
+
+        // Static metadata descriptor support bits
+        byte = 0;
+        if let Some(descriptor) = self.static_metadata_descriptor {
+            byte |= 1 << (descriptor as u8);
+        }
+
+        data.push(byte);
+
+        self.luminance.append_to(&mut data);
+        data
+    }
+
+    fn size(&self) -> usize {
+        EDID_EXTENSION_CTA_861_HDR_STATIC_METADATA_HEADER_LEN + self.luminance.size()
+    }
+}
+
+#[cfg(test)]
+mod test_hdr_static_metadata {
+    use rstest::rstest;
+
+    use crate::{
+        EdidExtensionCTA861HdrStaticMetadataDataBlock,
+        EdidExtensionCTA861HdrStaticMetadataDescriptor as Descriptor,
+        EdidExtensionCTA861HdrStaticMetadataLuminance as Luminance, IntoBytes as _,
+    };
+
+    #[rstest]
+    #[case::none(Luminance::None, &[0xE3, 0x06, 0x0D, 0x01])]
+    #[case::max(
+        Luminance::Max { max_luminance: 138 },
+        &[0xE4, 0x06, 0x0D, 0x01, 0x8A],
+    )]
+    #[case::max_avg(
+        Luminance::MaxAvg { max_luminance: 138, max_avg_luminance: 96 },
+        &[0xE5, 0x06, 0x0D, 0x01, 0x8A, 0x60],
+    )]
+    #[case::min_max_avg(
+        Luminance::MinMaxAvg {
+            max_luminance: 138, max_avg_luminance: 96, min_luminance: 18,
+        },
+        &[0xE6, 0x06, 0x0D, 0x01, 0x8A, 0x60, 0x12],
+    )]
+    fn test_binary_spec(#[case] luminance: Luminance, #[case] expected: &[u8]) {
+        // SDR + PQ + HLG, Type 1 static metadata, luminance code values 138/96/18.
+        // Verified independently against edid-decode.
+        let block = EdidExtensionCTA861HdrStaticMetadataDataBlock::builder()
+            .traditional_gamma_sdr(true)
+            .smpte_st2084(true)
+            .bt_2100_hlg(true)
+            .static_metadata_descriptor(Descriptor::Type1)
+            .luminance(luminance)
+            .build();
+
+        assert_eq!(block.size(), expected.len());
+        assert_eq!(block.into_bytes(), expected);
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn test_deserialize() {
+        let json = r#"{
+            "static_metadata_descriptor": "type1",
+            "luminance": {
+                "min_max_avg": {"max_luminance":138,"max_avg_luminance":96,"min_luminance":18}
+            }
+        }"#;
+        let block: EdidExtensionCTA861HdrStaticMetadataDataBlock =
+            serde_json::from_str(json).expect("HDR block should deserialize");
+
+        assert_eq!(
+            block.into_bytes(),
+            [0xE6, 0x06, 0x00, 0x01, 0x8A, 0x60, 0x12]
+        );
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn test_deserialize_rejects_extra_luminance() {
+        let json = r#"{"luminance":{"max":{"max_luminance":138,"min_luminance":18}}}"#;
+
+        assert!(
+            serde_json::from_str::<EdidExtensionCTA861HdrStaticMetadataDataBlock>(json).is_err(),
+            "Extra luminance fields should be rejected",
+        );
+    }
+}
+
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
@@ -834,6 +1043,8 @@ pub enum EdidExtensionCTA861Revision3DataBlock {
     #[cfg_attr(feature = "serde", serde(rename = "hdmi"))]
     HDMI(EdidExtensionCTA861HdmiDataBlock),
     VideoCapability(EdidExtensionCTA861VideoCapabilityDataBlock),
+    #[cfg_attr(feature = "serde", serde(rename = "hdr"))]
+    HDR(EdidExtensionCTA861HdrStaticMetadataDataBlock),
 }
 
 impl IntoBytes for EdidExtensionCTA861Revision3DataBlock {
@@ -845,6 +1056,7 @@ impl IntoBytes for EdidExtensionCTA861Revision3DataBlock {
             Self::Video(v) => v.into_bytes(),
             Self::HDMI(v) => v.into_bytes(),
             Self::VideoCapability(v) => v.into_bytes(),
+            Self::HDR(v) => v.into_bytes(),
         }
     }
 
@@ -856,6 +1068,7 @@ impl IntoBytes for EdidExtensionCTA861Revision3DataBlock {
             Self::Video(v) => v.size(),
             Self::HDMI(v) => v.size(),
             Self::VideoCapability(v) => v.size(),
+            Self::HDR(v) => v.size(),
         }
     }
 }
