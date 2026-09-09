@@ -56,6 +56,7 @@ pub use extensions::{
     EdidExtensionCTA861AudioDataBlockSamplingRate, EdidExtensionCTA861ColorimetryDataBlock,
     EdidExtensionCTA861Hdmi14bDataBlockVideo, EdidExtensionCTA861Hdmi14bTmdsRate,
     EdidExtensionCTA861HdmiDataBlock, EdidExtensionCTA861HdrStaticMetadataDataBlock,
+    EdidExtensionCTA861HdrStaticMetadataDescriptor, EdidExtensionCTA861HdrStaticMetadataLuminance,
     EdidExtensionCTA861Revision3, EdidExtensionCTA861Revision3DataBlock,
     EdidExtensionCTA861SpeakerAllocationDataBlock, EdidExtensionCTA861VideoCapabilityDataBlock,
     EdidExtensionCTA861VideoCapabilityQuantization, EdidExtensionCTA861VideoCapabilityScanBehavior,
